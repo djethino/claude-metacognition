@@ -23,6 +23,7 @@ sys.path.insert(0, str(__file__).rsplit("scripts", 1)[0] + "scripts")
 from lib.context import (
     fix_stdin_encoding,
     load_hook_input,
+    build_interleaved,
     # Metacognition state
     load_state,
     save_state,
@@ -132,8 +133,8 @@ def main() -> int:
         state["compaction_count"] = 0
     save_state(cwd, session_id, state)
 
-    # Message intercalé : nudge + prompt + nudge + prompt + nudge
-    interleaved = f"{PRE_TASK_REFLECTION}\n\n---\n\nPROMPT UTILISATEUR :\n{prompt}\n\n---\n\n{PRE_TASK_REFLECTION}\n\n---\n\nPROMPT UTILISATEUR :\n{prompt}\n\n---\n\n{PRE_TASK_REFLECTION}"
+    # Message intercalé : nudge + prompt + nudge (avec REPETITION_COUNT=2)
+    interleaved = build_interleaved(PRE_TASK_REFLECTION, prompt)
 
     output = {
         "hookSpecificOutput": {

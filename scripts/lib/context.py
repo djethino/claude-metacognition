@@ -13,6 +13,16 @@ from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+# Number of times to repeat messages (Google Research technique for LLM adherence)
+# - For simple messages: message repeated REPETITION_COUNT times
+# - For interleaved (prompt + nudge): prompt appears (REPETITION_COUNT - 1) times in additionalContext
+REPETITION_COUNT = 2
+
+
+# ---------------------------------------------------------------------------
 # Common utilities
 # ---------------------------------------------------------------------------
 
@@ -31,20 +41,28 @@ def load_hook_input() -> dict | None:
         return None
 
 
-def output_message(message: str, hook_event: str) -> None:
-    """Output a system message for the given hook event.
+def repeat_message(message: str) -> str:
+    """Repeat a message REPETITION_COUNT times, separated by ---."""
+    parts = [message] * REPETITION_COUNT
+    return "\n\n---\n\n".join(parts)
 
-    Le message est répété 2 fois (technique Google Research) pour améliorer
-    la prise en compte par les LLM basés sur Transformer.
+
+def build_interleaved(nudge: str, prompt: str) -> str:
+    """Build interleaved nudge + prompt pattern.
+
+    With REPETITION_COUNT=2: nudge + prompt + nudge (prompt appears 1 time)
+    With REPETITION_COUNT=3: nudge + prompt + nudge + prompt + nudge (prompt appears 2 times)
+    With REPETITION_COUNT=1: nudge only (prompt appears 0 times)
     """
-    repeated_message = f"{message}\n\n---\n\n{message}\n\n---\n\n{message}"
-    output = {
-        "hookSpecificOutput": {
-            "hookEventName": hook_event,
-            "additionalContext": repeated_message,
-        }
-    }
-    print(json.dumps(output, ensure_ascii=False))
+    if REPETITION_COUNT <= 1:
+        return nudge
+
+    parts = []
+    for i in range(REPETITION_COUNT):
+        parts.append(nudge)
+        if i < REPETITION_COUNT - 1:
+            parts.append(f"PROMPT UTILISATEUR :\n{prompt}")
+    return "\n\n---\n\n".join(parts)
 
 
 def normalize_path(file_path: str, cwd: str) -> str:

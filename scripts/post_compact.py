@@ -24,6 +24,7 @@ sys.path.insert(0, str(__file__).rsplit("scripts", 1)[0] + "scripts")
 from lib.context import (
     fix_stdin_encoding,
     load_hook_input,
+    repeat_message,
     # Metacognition state
     load_state,
     save_state,
@@ -238,9 +239,8 @@ def main() -> int:
         # Reset task context
         reset_context(cwd, session_id)
 
-        # Inject new session message (3x repeated via output_context)
-        repeated = f"{NEW_SESSION_MESSAGE}\n\n---\n\n{NEW_SESSION_MESSAGE}\n\n---\n\n{NEW_SESSION_MESSAGE}"
-        output_context(repeated)
+        # Inject new session message (repeated REPETITION_COUNT times)
+        output_context(repeat_message(NEW_SESSION_MESSAGE))
 
     return 0
 
