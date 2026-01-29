@@ -5,11 +5,11 @@ Deux rôles :
 1. Capture le prompt initial et les interventions utilisateur (pour post-compaction)
 2. Injecte des questions de réflexion quand une nouvelle tâche commence
 
-Logique de capture (portée de guardian-coach) :
+Logique de capture :
 - Si task_completed flag est True → nouvelle tâche, reset et sauvegarde comme initial prompt
 - Sinon → intervention sur la tâche en cours, ajout à la liste
 
-Logique de réflexion (metacognition originale) :
+Logique de réflexion :
 - Au premier prompt ou après compaction → injecte les questions de réflexion
 """
 
@@ -93,7 +93,7 @@ def main() -> int:
 
     timestamp = datetime.now().isoformat()
 
-    # --- Task context tracking (porté de guardian-coach) ---
+    # --- Task context tracking ---
     context = load_context(cwd, session_id) or {
         "initial_prompt": None,
         "initial_timestamp": None,

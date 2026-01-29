@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """PostToolUse hook for tracking file access.
 
-Porté de guardian-coach. Enregistre les fichiers accédés par Read/Edit/Write
-dans le fichier de contexte de la session.
+Enregistre les fichiers accédés par Read/Edit/Write dans le fichier de
+contexte de la session.
 
 Types d'accès trackés :
 - read: fichier lu (pour contexte/analyse)

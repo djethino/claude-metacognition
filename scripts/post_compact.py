@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """SessionStart hook - Contexte post-compaction + metacognition.
 
-Deux rôles fusionnés :
-1. Injection du contexte mécanique (porté de guardian-coach) :
+Deux rôles :
+1. Injection du contexte mécanique :
    - Prompt initial, interventions, fichiers accédés, fichiers modifiés par d'autres
-2. Rappels métacognitifs (existant) :
+2. Rappels métacognitifs :
    - Questions de reformulation, conscience du contexte partiel
 
 Problèmes adressés :
@@ -37,7 +37,7 @@ fix_stdin_encoding()
 
 
 # ---------------------------------------------------------------------------
-# File detection utilities (portées de guardian-coach)
+# File detection utilities
 # ---------------------------------------------------------------------------
 
 def get_recent_files_with_mtime(cwd: str, since_timestamp: str, limit: int = 15) -> list[tuple[str, str]]:

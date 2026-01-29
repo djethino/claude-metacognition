@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stop hook - Flag task_completed.
 
-Set task_completed=True dans le task-context (porté de guardian-coach).
+Set task_completed=True dans le task-context.
 Permet à on_new_task.py de distinguer nouvelle tâche / intervention.
 
 Note: Le hook Stop fire APRÈS la réponse complète. Un systemMessage ici
