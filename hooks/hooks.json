@@ -1,0 +1,82 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 --version >/dev/null 2>&1 && python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/on_new_task.py\" || python \"${CLAUDE_PLUGIN_ROOT}/scripts/on_new_task.py\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 --version >/dev/null 2>&1 && python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/on_task_end.py\" || python \"${CLAUDE_PLUGIN_ROOT}/scripts/on_task_end.py\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 --version >/dev/null 2>&1 && python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/post_compact.py\" || python \"${CLAUDE_PLUGIN_ROOT}/scripts/post_compact.py\""
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 --version >/dev/null 2>&1 && python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/pre_compact.py\" || python \"${CLAUDE_PLUGIN_ROOT}/scripts/pre_compact.py\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 --version >/dev/null 2>&1 && python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/on_file_access.py\" || python \"${CLAUDE_PLUGIN_ROOT}/scripts/on_file_access.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 --version >/dev/null 2>&1 && python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/on_file_access.py\" || python \"${CLAUDE_PLUGIN_ROOT}/scripts/on_file_access.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 --version >/dev/null 2>&1 && python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/on_file_access.py\" || python \"${CLAUDE_PLUGIN_ROOT}/scripts/on_file_access.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 --version >/dev/null 2>&1 && python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/on_file_access.py\" || python \"${CLAUDE_PLUGIN_ROOT}/scripts/on_file_access.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

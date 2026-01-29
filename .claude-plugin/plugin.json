@@ -1,0 +1,21 @@
+{
+  "name": "claude-metacognition",
+  "version": "0.1.0",
+  "description": "Hooks de réflexion métacognitive pour Claude Code : questions pré-tâche, vérification post-tâche, conscience du contexte partiel post-compaction",
+  "author": {
+    "name": "ASymptOmatik"
+  },
+  "license": "MIT",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "metacognition",
+    "reflection",
+    "context",
+    "compaction",
+    "senior",
+    "quality",
+    "hook",
+    "plugin"
+  ]
+}

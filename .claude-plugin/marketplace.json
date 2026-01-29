@@ -1,0 +1,13 @@
+{
+  "name": "claude-metacognition",
+  "owner": {
+    "name": "ASymptOmatik"
+  },
+  "plugins": [
+    {
+      "name": "claude-metacognition",
+      "source": ".",
+      "description": "Hooks de réflexion métacognitive pour Claude Code"
+    }
+  ]
+}
