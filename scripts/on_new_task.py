@@ -41,20 +41,20 @@ MAX_CONTEXT_FILES = 10
 PRE_TASK_REFLECTION = """
 🧠 RÉFLEXION — AVANT ET APRÈS
 
-**AVANT DE COMMENCER**, formule explicitement :
-1. **TOUS les éléments** de la demande (liste-les — aucun n'est optionnel)
-2. Ce que tu **comprends** de chaque élément
-3. Ce que tu **INTERPRÈTES** (termes ambigus, contexte que tu supposes)
-4. Ce que tu **NE SAIS PAS** et qui pourrait être nécessaire
-5. L'**existant à consulter** (documents, travail précédent, contexte projet)
+**AVANT DE COMMENCER**, tu DOIS formuler explicitement :
+1. Quels sont **TOUS les éléments** de la demande ? (aucun n'est optionnel)
+2. Que **comprends-tu** de chaque élément ?
+3. Qu'est-ce que tu **INTERPRÈTES** ? (termes ambigus, contexte supposé)
+4. Que **NE SAIS-TU PAS** qui pourrait être nécessaire ?
+5. Quel **existant** dois-tu consulter ? (documents, travail précédent, contexte projet)
 
 → Si le point 4 contient des éléments critiques : **demande clarification** avant de foncer.
 
-**AVANT DE CONCLURE**, vérifie :
-1. Relis le prompt — qu'est-ce que tu n'as **PAS traité** ? (aucun élément n'est optionnel)
+**AVANT DE CONCLURE**, tu DOIS vérifier :
+1. Qu'est-ce que tu n'as **PAS traité** dans le prompt ? (aucun élément n'est optionnel)
 2. As-tu produit quelque chose d'**UTILISABLE** ou juste d'**esquissé** ?
-3. Qu'est-ce qui **reste à faire** pour que ce soit complet ?
-4. Y a-t-il des éléments **en attente d'autre chose** (dépendances, validations) ?
+3. Que **reste-t-il à faire** pour que ce soit complet ?
+4. Y a-t-il des éléments **en attente** d'autre chose ? (dépendances, validations)
 5. Quelles **hypothèses** as-tu faites qui mériteraient d'être signalées ?
 
 → Si tu as été sélectif ou si tu as fait des hypothèses : **dis-le explicitement**.

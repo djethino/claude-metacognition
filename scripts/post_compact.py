@@ -95,15 +95,15 @@ def reset_context(cwd: str, session_id: str) -> None:
 # ---------------------------------------------------------------------------
 
 POST_COMPACTION_METACOG = """
-Pendant ton travail, si tu sens que :
-- Tu es perdu ou tu ne comprends plus le POURQUOI
-- Tu vas simplifier ou couper des coins pour aller plus vite
-- Tu risques de casser quelque chose qui existait avant
+Pendant ton travail, tu DOIS régulièrement te demander :
+- Comprends-tu encore le POURQUOI de ce que tu fais ?
+- Es-tu en train de simplifier ou couper des coins ?
+- Risques-tu de casser quelque chose qui existait avant ?
 
-→ ARRÊTE et fais un point avec l'utilisateur :
-  - Ce qui a été complètement fait
-  - Ce qui reste à faire
-  - Ce que tu n'es pas sûr de comprendre
+Si une réponse t'inquiète → ARRÊTE et fais un point avec l'utilisateur :
+- Qu'est-ce qui a été complètement fait ?
+- Que reste-t-il à faire ?
+- Qu'est-ce que tu n'es pas sûr de comprendre ?
 
 Rappel : Après compaction, tu as tendance à devenir hyper-focalisé sur "la tâche" en oubliant le contexte global. Résiste à cette tendance.
 """.strip()
@@ -113,10 +113,10 @@ NEW_SESSION_MESSAGE = """
 
 Tu démarres une nouvelle session. Tu n'as pas d'historique avec cet utilisateur dans ce projet.
 
-Si l'utilisateur fait référence à du travail précédent :
-- **Demande clarification** plutôt que de supposer
-- **Vérifie l'existant** (fichiers, documents, contexte projet)
-- Ne fonce pas en supposant que tu sais
+Si l'utilisateur fait référence à du travail précédent, tu DOIS te poser ces questions :
+- De quoi parle-t-il exactement ? (ne suppose pas)
+- Quel existant dois-tu vérifier ? (fichiers, documents, contexte projet)
+- Qu'est-ce qui te manque pour comprendre ?
 """.strip()
 
 
