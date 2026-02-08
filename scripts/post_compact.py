@@ -242,8 +242,16 @@ def main() -> int:
         # Build and inject full context message
         message = build_compaction_message(cwd, session_id)
         output_context(message)
+
+    elif source == "resume":
+        # --- Session resumed (claude -c / claude -r) ---
+        # Claude already has the conversation history loaded.
+        # Don't reset state or context - the user is continuing their work.
+        # Don't inject "new session" message - it would be misleading.
+        pass
+
     else:
-        # --- New session ---
+        # --- New session (startup) or clear ---
         # Reset metacognition state
         state = {"task_started": False, "compaction_count": 0}
         save_state(cwd, session_id, state)
