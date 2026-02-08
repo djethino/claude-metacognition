@@ -156,3 +156,36 @@ def save_context(cwd: str, session_id: str, context: dict) -> bool:
         return True
     except OSError:
         return False
+
+
+# ---------------------------------------------------------------------------
+# Plugin detection
+# ---------------------------------------------------------------------------
+
+_recall_available: bool | None = None
+
+
+def is_recall_available() -> bool:
+    """Check if claude-recall plugin is installed and enabled.
+
+    Reads ~/.claude/settings.json and checks enabledPlugins for a key
+    containing 'claude-recall' with value True. Result is cached for the
+    lifetime of the process (one hook invocation).
+    """
+    global _recall_available
+    if _recall_available is not None:
+        return _recall_available
+    try:
+        settings_path = Path.home() / ".claude" / "settings.json"
+        if not settings_path.exists():
+            _recall_available = False
+            return False
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        enabled = settings.get("enabledPlugins", {})
+        _recall_available = any(
+            "claude-recall" in key and val is True
+            for key, val in enabled.items()
+        )
+    except Exception:
+        _recall_available = False
+    return _recall_available
