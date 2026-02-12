@@ -1,0 +1,32 @@
+{
+  "name": "claude-metacognition",
+  "version": "0.2.0",
+  "description": "Metacognitive reflection hooks for Claude Code: pre-task questions, post-task verification, post-compaction context awareness",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": {
+    "name": "ASymptOmatik"
+  },
+  "license": "MIT",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "metacognition",
+    "reflection",
+    "context",
+    "compaction",
+    "senior",
+    "quality",
+    "hook",
+    "plugin"
+  ]
+}
