@@ -107,13 +107,8 @@ function buildCompactionMessage(cwd: string, state: SessionState): string {
   // Souvenir integration (if available)
   if (isSouvenirAvailable()) {
     lines.push('');
-    lines.push('\uD83D\uDD0D R\u00C9CUP\u00C9RATION DE CONTEXTE PROFOND (claude-souvenir disponible)');
-    lines.push('Si le r\u00E9sum\u00E9 ci-dessus est insuffisant, tu as acc\u00E8s aux outils :');
-    lines.push('- `souvenir_search` : Chercher dans TOUTES les sessions pass\u00E9es (text, semantic, hybrid) ET dans les docs/code du projet (source="project")');
-    lines.push('- `souvenir_read` : Lire le transcript complet d\'une session');
-    lines.push('- `souvenir_sessions` : Lister les sessions de ce projet');
-    lines.push('- `souvenir_docs` : G\u00E9rer l\'indexation des fichiers du projet');
-    lines.push('Utilise-les AVANT de demander \u00E0 l\'utilisateur de r\u00E9p\u00E9ter ce qui a d\u00E9j\u00E0 \u00E9t\u00E9 dit.');
+    lines.push('\uD83D\uDD0D Le r\u00E9sum\u00E9 et le contexte ci-dessus sont-ils suffisants pour continuer ?');
+    lines.push('Si non \u2192 `souvenir_search` pour retrouver les discussions et d\u00E9cisions perdues. Ne demande pas \u00E0 l\'utilisateur de r\u00E9p\u00E9ter ce qui a d\u00E9j\u00E0 \u00E9t\u00E9 dit.');
   }
 
   return lines.join('\n');
@@ -154,12 +149,8 @@ function main(): number {
     // Build session message (with optional souvenir section)
     let sessionMsg = NEW_SESSION_MESSAGE;
     if (isSouvenirAvailable()) {
-      sessionMsg += '\n\n\uD83D\uDD0D HISTORIQUE DISPONIBLE (claude-souvenir)\n';
-      sessionMsg += 'Tu peux consulter les sessions pr\u00E9c\u00E9dentes et les fichiers du projet :\n';
-      sessionMsg += '- `souvenir_sessions` pour lister les sessions\n';
-      sessionMsg += '- `souvenir_search` pour chercher dans l\'historique et les docs\n';
-      sessionMsg += '- `souvenir_read` pour lire une session sp\u00E9cifique\n';
-      sessionMsg += '- `souvenir_docs` pour g\u00E9rer l\'indexation des fichiers du projet';
+      sessionMsg += '\n\n\uD83D\uDD0D Si l\'utilisateur fait r\u00E9f\u00E9rence \u00E0 du travail pass\u00E9 \u2192 `souvenir_search` avant de demander des pr\u00E9cisions.';
+      sessionMsg += '\nPour d\u00E9couvrir le projet \u2192 `souvenir_tree` donne une vue d\'ensemble en un appel.';
     }
 
     // Inject new session message (repeated REPETITION_COUNT times)
