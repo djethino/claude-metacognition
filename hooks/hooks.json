@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOOK_PLUGIN_DIR/build/hooks/prompt-submit.js\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/build/hooks/prompt-submit.js\""
           }
         ]
       }
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOOK_PLUGIN_DIR/build/hooks/stop.js\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/build/hooks/stop.js\""
           }
         ]
       }
@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOOK_PLUGIN_DIR/build/hooks/session-start.js\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/build/hooks/session-start.js\""
           }
         ]
       }
@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOOK_PLUGIN_DIR/build/hooks/file-access.js\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/build/hooks/file-access.js\""
           }
         ]
       },
@@ -45,7 +45,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOOK_PLUGIN_DIR/build/hooks/file-access.js\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/build/hooks/file-access.js\""
           }
         ]
       },
@@ -54,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOOK_PLUGIN_DIR/build/hooks/file-access.js\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/build/hooks/file-access.js\""
           }
         ]
       },
@@ -63,7 +63,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOOK_PLUGIN_DIR/build/hooks/file-access.js\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/build/hooks/file-access.js\""
           }
         ]
       }
