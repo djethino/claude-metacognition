@@ -32,7 +32,7 @@ from lib.context import (
     load_context,
     save_context,
     # Plugin detection
-    is_recall_available,
+    is_souvenir_available,
 )
 
 fix_stdin_encoding()
@@ -195,14 +195,15 @@ def build_compaction_message(cwd: str, session_id: str) -> str:
     # Metacognitive reminder
     lines.append(POST_COMPACTION_METACOG)
 
-    # Recall integration (if available)
-    if is_recall_available():
+    # Souvenir integration (if available)
+    if is_souvenir_available():
         lines.append("")
-        lines.append("🔍 RÉCUPÉRATION DE CONTEXTE PROFOND (claude-recall disponible)")
+        lines.append("🔍 RÉCUPÉRATION DE CONTEXTE PROFOND (claude-souvenir disponible)")
         lines.append("Si le résumé ci-dessus est insuffisant, tu as accès aux outils :")
-        lines.append("- `recall_search` : Chercher dans TOUTES les sessions passées (text, semantic, hybrid)")
-        lines.append("- `recall_read` : Lire le transcript complet d'une session")
-        lines.append("- `recall_sessions` : Lister les sessions de ce projet")
+        lines.append("- `souvenir_search` : Chercher dans TOUTES les sessions passées (text, semantic, hybrid) ET dans les docs/code du projet (source=\"project\")")
+        lines.append("- `souvenir_read` : Lire le transcript complet d'une session")
+        lines.append("- `souvenir_sessions` : Lister les sessions de ce projet")
+        lines.append("- `souvenir_docs` : Gérer l'indexation des fichiers du projet")
         lines.append("Utilise-les AVANT de demander à l'utilisateur de répéter ce qui a déjà été dit.")
 
     return "\n".join(lines)
@@ -259,14 +260,15 @@ def main() -> int:
         # Reset task context
         reset_context(cwd, session_id)
 
-        # Build session message (with optional recall section)
+        # Build session message (with optional souvenir section)
         session_msg = NEW_SESSION_MESSAGE
-        if is_recall_available():
-            session_msg += "\n\n🔍 HISTORIQUE DISPONIBLE (claude-recall)\n"
-            session_msg += "Tu peux consulter les sessions précédentes de ce projet :\n"
-            session_msg += "- `recall_sessions` pour lister les sessions\n"
-            session_msg += "- `recall_search` pour chercher dans l'historique\n"
-            session_msg += "- `recall_read` pour lire une session spécifique"
+        if is_souvenir_available():
+            session_msg += "\n\n🔍 HISTORIQUE DISPONIBLE (claude-souvenir)\n"
+            session_msg += "Tu peux consulter les sessions précédentes et les fichiers du projet :\n"
+            session_msg += "- `souvenir_sessions` pour lister les sessions\n"
+            session_msg += "- `souvenir_search` pour chercher dans l'historique et les docs\n"
+            session_msg += "- `souvenir_read` pour lire une session spécifique\n"
+            session_msg += "- `souvenir_docs` pour gérer l'indexation des fichiers du projet"
 
         # Inject new session message (repeated REPETITION_COUNT times)
         output_context(repeat_message(session_msg))
