@@ -4,8 +4,9 @@
  * Tracks: task_started, compaction_count (for reflection prompts).
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { randomBytes } from 'crypto';
 import type { MetacogState } from './types.js';
 
 const DEFAULT_STATE: MetacogState = { task_started: false, compaction_count: 0 };
@@ -37,7 +38,11 @@ export function saveState(cwd: string, sessionId: string, state: MetacogState): 
   try {
     const dir = getStateDir(cwd);
     mkdirSync(dir, { recursive: true });
-    writeFileSync(getStateFile(cwd, sessionId), JSON.stringify(state, null, 2), 'utf-8');
+    const target = getStateFile(cwd, sessionId);
+    // Atomic write: temp file + rename (prevents partial reads by concurrent hooks)
+    const tmp = target + '.' + randomBytes(4).toString('hex') + '.tmp';
+    writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf-8');
+    renameSync(tmp, target);
     return true;
   } catch {
     return false;

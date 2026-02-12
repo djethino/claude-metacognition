@@ -4,8 +4,9 @@
  * Tracks: initial_prompt, interventions, file_access, task_completed.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
+import { readFileSync, writeFileSync, renameSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join } from 'path';
+import { randomBytes } from 'crypto';
 import type { TaskContext } from './types.js';
 
 const MAX_CONTEXT_FILES = 10;
@@ -37,7 +38,11 @@ export function saveContext(cwd: string, sessionId: string, context: TaskContext
   try {
     const dir = getContextsDir(cwd);
     mkdirSync(dir, { recursive: true });
-    writeFileSync(getContextFile(cwd, sessionId), JSON.stringify(context, null, 2), 'utf-8');
+    const target = getContextFile(cwd, sessionId);
+    // Atomic write: write to temp file then rename (prevents partial reads by concurrent hooks)
+    const tmp = target + '.' + randomBytes(4).toString('hex') + '.tmp';
+    writeFileSync(tmp, JSON.stringify(context, null, 2), 'utf-8');
+    renameSync(tmp, target);
     return true;
   } catch {
     return false;
