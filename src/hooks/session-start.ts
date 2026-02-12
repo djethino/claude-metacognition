@@ -14,18 +14,17 @@
  */
 
 import { loadHookInput, outputContext } from '../lib/io.js';
-import { loadState, saveState } from '../lib/state.js';
-import { loadContext, resetContext } from '../lib/context.js';
+import { loadState, saveState, resetState } from '../lib/state.js';
 import { getFileMtime, getRecentFilesWithMtime } from '../lib/paths.js';
 import { repeatMessage, POST_COMPACTION_METACOG, NEW_SESSION_MESSAGE } from '../lib/messages.js';
 import { isSouvenirAvailable } from '../lib/souvenir.js';
-import type { MetacogState, TaskContext } from '../lib/types.js';
+import type { SessionState } from '../lib/types.js';
 
 // ---------------------------------------------------------------------------
 // Build the compaction message
 // ---------------------------------------------------------------------------
 
-function buildCompactionMessage(cwd: string, sessionId: string): string {
+function buildCompactionMessage(cwd: string, state: SessionState): string {
   const now = new Date();
   const nowStr = formatTime(now);
 
@@ -36,11 +35,9 @@ function buildCompactionMessage(cwd: string, sessionId: string): string {
     '',
   ];
 
-  const context = loadContext(cwd, sessionId);
-
-  if (context) {
+  if (state.initial_prompt !== null) {
     // Timestamps
-    const initialTs = context.initial_timestamp;
+    const initialTs = state.initial_timestamp;
     if (initialTs) {
       try {
         const startTime = formatTime(new Date(initialTs));
@@ -53,14 +50,12 @@ function buildCompactionMessage(cwd: string, sessionId: string): string {
     }
 
     // Initial prompt
-    if (context.initial_prompt) {
-      lines.push('\uD83D\uDCCB DEMANDE INITIALE :');
-      lines.push(context.initial_prompt);
-      lines.push('');
-    }
+    lines.push('\uD83D\uDCCB DEMANDE INITIALE :');
+    lines.push(state.initial_prompt!);
+    lines.push('');
 
     // User interventions
-    const interventions = context.interventions ?? [];
+    const interventions = state.interventions ?? [];
     if (interventions.length > 0) {
       lines.push('\uD83D\uDCAC INTERVENTIONS UTILISATEUR :');
       for (const interv of interventions.slice(-5)) {
@@ -71,7 +66,7 @@ function buildCompactionMessage(cwd: string, sessionId: string): string {
 
     // Files accessed during this task
     if (initialTs) {
-      const fileAccess = context.file_access ?? {};
+      const fileAccess = state.file_access ?? {};
       const fileAccessEntries = Object.entries(fileAccess);
 
       if (fileAccessEntries.length > 0) {
@@ -141,14 +136,11 @@ function main(): number {
 
   if (source === 'compact') {
     // --- Compaction detected ---
-    const updatedState: MetacogState = {
-      ...state,
-      compaction_count: (state.compaction_count ?? 0) + 1,
-    };
-    saveState(cwd, session_id, updatedState);
+    state.compaction_count = (state.compaction_count ?? 0) + 1;
+    saveState(cwd, session_id, state);
 
     // Build and inject full context message
-    const message = buildCompactionMessage(cwd, session_id);
+    const message = buildCompactionMessage(cwd, state);
     outputContext('SessionStart', message);
   } else if (source === 'resume') {
     // --- Session resumed (claude -c / claude -r) ---
@@ -157,11 +149,7 @@ function main(): number {
     // Don't inject "new session" message — it would be misleading.
   } else {
     // --- New session (startup) or clear ---
-    const freshState: MetacogState = { task_started: false, compaction_count: 0 };
-    saveState(cwd, session_id, freshState);
-
-    // Reset task context
-    resetContext(cwd, session_id);
+    resetState(cwd, session_id);
 
     // Build session message (with optional souvenir section)
     let sessionMsg = NEW_SESSION_MESSAGE;

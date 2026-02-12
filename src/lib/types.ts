@@ -15,18 +15,16 @@ export interface HookInput {
   tool_input?: Record<string, unknown>;
 }
 
-/** Metacognition state (.claude/metacognition/{session_id}.json) */
-export interface MetacogState {
+/** Unified session state (.claude/metacognition/{session_id}.json) */
+export interface SessionState {
+  // Metacognition
   task_started: boolean;
   compaction_count: number;
-}
-
-/** Task context (.claude/task-contexts/{session_id}.json) */
-export interface TaskContext {
+  // Task context
   initial_prompt: string | null;
   initial_timestamp: string | null;
   interventions: Intervention[];
-  task_completed?: boolean;
+  task_completed: boolean;
   file_access?: Record<string, string[]>;
 }
 

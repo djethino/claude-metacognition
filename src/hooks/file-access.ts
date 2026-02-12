@@ -14,9 +14,8 @@
  */
 
 import { loadHookInput } from '../lib/io.js';
-import { loadContext, saveContext } from '../lib/context.js';
+import { loadState, saveState } from '../lib/state.js';
 import { normalizePath } from '../lib/paths.js';
-import type { TaskContext } from '../lib/types.js';
 
 function main(): number {
   const input = loadHookInput();
@@ -45,20 +44,16 @@ function main(): number {
     accessType = 'update';
   }
 
-  // Update context with file access
-  const context: TaskContext = loadContext(cwd, session_id) ?? {
-    initial_prompt: null,
-    initial_timestamp: null,
-    interventions: [],
-  };
+  // Update state with file access
+  const state = loadState(cwd, session_id);
 
-  if (!context.file_access) {
-    context.file_access = {};
+  if (!state.file_access) {
+    state.file_access = {};
   }
 
   // Normalize existing paths (handle backslash inconsistencies)
   const normalizedAccess: Record<string, string[]> = {};
-  for (const [path, accesses] of Object.entries(context.file_access)) {
+  for (const [path, accesses] of Object.entries(state.file_access)) {
     const normPath = path.replace(/\\/g, '/');
     if (normPath in normalizedAccess) {
       const merged = new Set([...normalizedAccess[normPath], ...accesses]);
@@ -67,17 +62,17 @@ function main(): number {
       normalizedAccess[normPath] = accesses;
     }
   }
-  context.file_access = normalizedAccess;
+  state.file_access = normalizedAccess;
 
   // Add this access
-  if (!context.file_access[normalizedPath]) {
-    context.file_access[normalizedPath] = [];
+  if (!state.file_access[normalizedPath]) {
+    state.file_access[normalizedPath] = [];
   }
-  if (!context.file_access[normalizedPath].includes(accessType)) {
-    context.file_access[normalizedPath].push(accessType);
+  if (!state.file_access[normalizedPath].includes(accessType)) {
+    state.file_access[normalizedPath].push(accessType);
   }
 
-  saveContext(cwd, session_id, context);
+  saveState(cwd, session_id, state);
   return 0;
 }
 

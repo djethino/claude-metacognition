@@ -10,7 +10,7 @@
  */
 
 import { loadHookInput } from '../lib/io.js';
-import { loadContext, saveContext } from '../lib/context.js';
+import { loadState, saveState } from '../lib/state.js';
 
 function main(): number {
   const input = loadHookInput();
@@ -19,9 +19,9 @@ function main(): number {
   const { cwd, session_id } = input;
   if (!cwd || !session_id) return 0;
 
-  const context = loadContext(cwd, session_id) ?? ({} as Record<string, unknown>);
-  (context as Record<string, unknown>).task_completed = true;
-  saveContext(cwd, session_id, context as any);
+  const state = loadState(cwd, session_id);
+  state.task_completed = true;
+  saveState(cwd, session_id, state);
 
   return 0;
 }
