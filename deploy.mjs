@@ -2,7 +2,7 @@
 
 /**
  * Deploy claude-metacognition plugin to Claude Code plugins cache.
- * Usage: node deploy.js [--uninstall]
+ * Usage: node deploy.mjs [--uninstall]
  */
 
 import { readFileSync, existsSync, mkdirSync, cpSync, rmSync } from 'fs';
@@ -43,8 +43,7 @@ function deploy() {
   // Copy plugin files (excluding dev files)
   const exclude = new Set([
     '.git', 'node_modules', '.claude', 'src', '.gitignore',
-    'tsconfig.json', 'deploy.js', 'analyse', 'TODO.md',
-    'scripts', // Old Python scripts
+    'tsconfig.json', 'deploy.mjs', 'analyse', 'TODO.md',
   ]);
 
   console.log('Copying to cache...');

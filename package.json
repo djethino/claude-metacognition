@@ -2,7 +2,6 @@
   "name": "claude-metacognition",
   "version": "0.2.0",
   "description": "Metacognitive reflection hooks for Claude Code: pre-task questions, post-task verification, post-compaction context awareness",
-  "type": "module",
   "scripts": {
     "build": "tsc"
   },
