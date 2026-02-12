@@ -1,5 +1,5 @@
 /**
- * Unified session state CRUD (.claude/metacognition/{session_id}.json).
+ * Unified session state CRUD (.claude/ASymptOmatik/metacognition/{session_id}.json).
  *
  * Single file per session containing both metacognition state (task_started,
  * compaction_count) and task context (initial_prompt, interventions, file_access).
@@ -22,7 +22,7 @@ const DEFAULT_STATE: SessionState = {
 };
 
 function getStateDir(cwd: string): string {
-  return join(cwd, '.claude', 'metacognition');
+  return join(cwd, '.claude', 'ASymptOmatik', 'metacognition');
 }
 
 function getStateFile(cwd: string, sessionId: string): string {
