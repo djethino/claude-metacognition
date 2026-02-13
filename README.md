@@ -113,6 +113,15 @@ src/
 
 Single unified `SessionState` per session: `{ task_started, compaction_count, initial_prompt, interventions, task_completed, file_access }`. Writes are atomic (temp file + rename). Automatically cleaned up (max 10 per project).
 
+### Multi-Agent & Multi-Project
+
+Metacognition is designed for environments where multiple Claude instances (main agent, subagents, parallel sessions) may work on the same project simultaneously.
+
+- **Per-session isolation**: Each session gets its own state file (`{session_id}.json`). Agents never read or write each other's state — no cross-contamination.
+- **Atomic writes**: State is written to a temp file and renamed in a single OS operation. If two hooks fire at the same time (e.g., two agents completing simultaneously), neither corrupts the other's state file.
+- **Cross-agent awareness**: After compaction, the SessionStart hook detects files modified by *other* agents or external tools (via filesystem mtime comparison against tracked file access). This gives Claude visibility into work done outside its own session.
+- **Multi-project workspaces**: State is stored per-project (in the project's `.claude/` directory). A workspace containing multiple projects (each with its own `.git`) works naturally — git status and tree scan the workspace root, each project's state stays independent.
+
 ## Technical Details
 
 - **Language**: TypeScript compiled to CommonJS
