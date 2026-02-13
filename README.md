@@ -121,10 +121,26 @@ Single unified `SessionState` per session: `{ task_started, compaction_count, in
 - **Hook variable**: `${CLAUDE_PLUGIN_ROOT}` for path resolution
 - **Message technique**: Google Research repetition (REPETITION_COUNT=2) for improved LLM adherence
 
-## See Also
+## Ecosystem
 
-- **[claude-souvenir](https://github.com/djethino/claude-souvenir)** — Semantic search across conversation history and project files. Complements metacognition by enabling deep context recovery after compaction.
-- **[claude-code-safety-net](https://github.com/kenryu42/claude-code-safety-net)** — Blocks destructive commands (`rm -rf`, `git reset --hard`, `git push --force`). Metacognition focuses on reflection; safety-net on protection.
+Metacognition is part of a plugin suite designed around a simple idea: Claude is capable, but has structural blind spots that plugins can address at different layers.
+
+| Layer | Plugin | Role |
+|-------|--------|------|
+| **Behavior** | **claude-metacognition** (this plugin) | Decides *when* to think, *when* to search, *when* to stop and ask. Injects reflection at the right moments. |
+| **Memory** | **[claude-souvenir](https://github.com/djethino/claude-souvenir)** | Provides *what* to remember. Semantic search across past conversations and project files. |
+| **Safety** | **[claude-code-safety-net](https://github.com/kenryu42/claude-code-safety-net)** | Blocks *what not to do*. Prevents destructive commands (`rm -rf`, `git push --force`). |
+
+### How metacognition and souvenir interact
+
+Metacognition detects whether souvenir is installed (by reading `~/.claude/settings.json`). When it is:
+
+- **New session**: metacognition injects a project tree and suggests `souvenir_search` for past context, `souvenir_tree` for deeper exploration
+- **After compaction**: metacognition reminds Claude that `souvenir_search` can recover discussions and decisions lost in the summary
+
+Without souvenir, metacognition works identically — it just skips the tree and the souvenir-specific hints. Without metacognition, souvenir is available but Claude rarely thinks to use it after compaction, which is precisely when it's most needed.
+
+In short: metacognition is the reflex, souvenir is the memory. One without the other works, but together they cover the gap between "I should look this up" and "here's where to look."
 
 ## License
 
