@@ -15,10 +15,11 @@
 
 import { loadHookInput, outputContext } from '../lib/io.js';
 import { loadState, saveState, resetState } from '../lib/state.js';
-import { getFileMtime, getRecentFilesWithMtime } from '../lib/paths.js';
+import { getFileMtime, getRecentFilesWithMtime, getGitSubdirectories } from '../lib/paths.js';
 import { repeatMessage, POST_COMPACTION_METACOG, NEW_SESSION_MESSAGE } from '../lib/messages.js';
 import { isSouvenirAvailable } from '../lib/souvenir.js';
-import type { SessionState } from '../lib/types.js';
+import { buildProjectTree } from '../lib/tree.js';
+import type { SessionState, GitRepoInfo } from '../lib/types.js';
 
 // ---------------------------------------------------------------------------
 // Build the compaction message
@@ -146,15 +147,35 @@ function main(): number {
     // --- New session (startup) or clear ---
     resetState(cwd, session_id);
 
-    // Build session message (with optional souvenir section)
-    let sessionMsg = NEW_SESSION_MESSAGE;
+    // Repeated metacognitive message (appears REPETITION_COUNT times)
+    const repeatedMsg = repeatMessage(NEW_SESSION_MESSAGE);
+
+    // Factual context (appears once — no need to repeat data)
+    const contextParts: string[] = [];
+
+    // Souvenir: project tree + hints
     if (isSouvenirAvailable()) {
-      sessionMsg += '\n\n\uD83D\uDD0D Si l\'utilisateur fait r\u00E9f\u00E9rence \u00E0 du travail pass\u00E9 \u2192 `souvenir_search` avant de demander des pr\u00E9cisions.';
-      sessionMsg += '\nPour d\u00E9couvrir le projet \u2192 `souvenir_tree` donne une vue d\'ensemble en un appel.';
+      const tree = buildProjectTree(cwd);
+      contextParts.push('📂 STRUCTURE DU PROJET (aperçu `souvenir_tree`) :\n' + tree);
+      contextParts.push('🔍 Si l\'utilisateur fait référence à du travail passé → `souvenir_search` avant de demander des précisions.\nPour découvrir le projet en détail → `souvenir_tree` offre plus d\'options (filtres, compteurs de lignes, etc.).');
     }
 
-    // Inject new session message (repeated REPETITION_COUNT times)
-    outputContext('SessionStart', repeatMessage(sessionMsg));
+    // Git subdirectories: listing + status (independent of souvenir)
+    const gitDirs = getGitSubdirectories(cwd);
+    if (gitDirs.length > 0) {
+      let gitSection = '📦 DÉPÔTS GIT DANS LE WORKSPACE :';
+      for (const repo of gitDirs) {
+        gitSection += `\n  - ${repo.path}/ [${repo.branch}] (${repo.lastActivity}) — ${formatGitStatus(repo)}`;
+      }
+      gitSection += '\n\n⚠️ Si la synchronisation d\'un dépôt n\'est pas à jour, préviens l\'utilisateur dans ta prochaine réponse. Ne fais AUCUNE action git (commit, push, pull) sans demande explicite de l\'utilisateur.';
+      contextParts.push(gitSection);
+    }
+
+    const fullMsg = contextParts.length > 0
+      ? repeatedMsg + '\n\n' + contextParts.join('\n\n')
+      : repeatedMsg;
+
+    outputContext('SessionStart', fullMsg);
   }
 
   return 0;
@@ -168,4 +189,18 @@ process.exit(main());
 
 function formatTime(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function formatGitStatus(repo: GitRepoInfo): string {
+  const parts: string[] = [];
+  if (repo.uncommitted > 0) {
+    parts.push(`${repo.uncommitted} fichier${repo.uncommitted > 1 ? 's' : ''} non commité${repo.uncommitted > 1 ? 's' : ''}`);
+  }
+  if (repo.unpushed > 0) {
+    parts.push(`${repo.unpushed} commit${repo.unpushed > 1 ? 's' : ''} non poussé${repo.unpushed > 1 ? 's' : ''}`);
+  }
+  if (repo.unpulled > 0) {
+    parts.push(`${repo.unpulled} commit${repo.unpulled > 1 ? 's' : ''} non pullé${repo.unpulled > 1 ? 's' : ''}`);
+  }
+  return parts.length > 0 ? parts.join(', ') : 'OK';
 }

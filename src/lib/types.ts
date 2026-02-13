@@ -33,6 +33,16 @@ export interface Intervention {
   prompt: string;
 }
 
+/** Git repository status info for session start context. */
+export interface GitRepoInfo {
+  path: string;
+  branch: string;
+  lastActivity: string;  // YYYY-MM-DD HH:MM
+  uncommitted: number;   // files with uncommitted changes
+  unpushed: number;      // commits ahead of upstream
+  unpulled: number;      // commits behind upstream (from last fetch)
+}
+
 /** Hook JSON output to stdout. */
 export interface HookOutput {
   hookSpecificOutput: {

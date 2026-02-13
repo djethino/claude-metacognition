@@ -85,10 +85,9 @@ src/
 │   ├── stop.ts             # Task completion flag
 │   └── file-access.ts      # File operation tracking
 └── lib/
-    ├── types.ts            # TypeScript interfaces
+    ├── types.ts            # TypeScript interfaces (SessionState unified)
     ├── io.ts               # Hook stdin/stdout I/O
-    ├── state.ts            # MetacogState CRUD (.claude/metacognition/)
-    ├── context.ts          # TaskContext CRUD (.claude/task-contexts/)
+    ├── state.ts            # SessionState CRUD (.claude/ASymptOmatik/metacognition/)
     ├── paths.ts            # Path normalization + mtime utilities
     ├── messages.ts         # Message constants + interleaving
     └── souvenir.ts         # claude-souvenir plugin detection
@@ -97,12 +96,10 @@ src/
 ### Data Storage (per project)
 
 ```
-.claude/
-├── metacognition/{session_id}.json   # {task_started, compaction_count}
-└── task-contexts/{session_id}.json   # {initial_prompt, interventions, file_access, task_completed}
+.claude/ASymptOmatik/metacognition/{session_id}.json
 ```
 
-Context files are automatically cleaned up (max 10 per project).
+Single unified `SessionState` per session: `{ task_started, compaction_count, initial_prompt, interventions, task_completed, file_access }`. Writes are atomic (temp file + rename). Automatically cleaned up (max 10 per project).
 
 ## Technical Details
 
