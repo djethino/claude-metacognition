@@ -1,6 +1,23 @@
 # Claude Metacognition
 
-Claude Code plugin for metacognitive reflection and post-compaction context preservation. Hooks-only, zero runtime dependencies.
+Claude Code plugin that eliminates the repetitive startup and recovery steps Claude does at every session. Hooks-only, zero runtime dependencies.
+
+## Why
+
+Every Claude Code session follows the same pattern: Claude asks what the project is, reads files to orient itself, runs `git status`, and only then starts working. After context compaction, it's worse — Claude re-reads everything, forgets the original request, and fills gaps with plausible guesses instead of asking.
+
+These are not edge cases. They happen on every session, every compaction, every task switch.
+
+Metacognition addresses this by giving Claude the information it would spend the first few minutes gathering on its own:
+
+| Without | With metacognition |
+|---------|--------------------|
+| "What's this project about?" → user explains | Project tree + git status injected at startup |
+| After compaction: "What was I doing?" | Original prompt + interventions + accessed files restored |
+| Rushes into code, delivers partial work | Reflection questions force decomposition before starting |
+| Assumes when unsure, doesn't say so | Must declare unknowns and hypotheses explicitly |
+
+The plugin was built by observing Claude's actual failure patterns — not theoretical problems, but things that happened repeatedly in real sessions and cost real time.
 
 ## What It Does
 
