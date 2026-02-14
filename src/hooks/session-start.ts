@@ -153,14 +153,23 @@ function main(): number {
     // Factual context (appears once — no need to repeat data)
     const contextParts: string[] = [];
 
-    // Souvenir: project tree + hints
+    // Project tree (always — gives Claude orientation regardless of souvenir)
+    const tree = buildProjectTree(cwd);
+    const projectEmpty = tree === '(vide)';
+
+    if (!projectEmpty) {
+      const treeLabel = isSouvenirAvailable()
+        ? '📂 STRUCTURE DU PROJET (aperçu `souvenir_tree`) :'
+        : '📂 STRUCTURE DU PROJET :';
+      contextParts.push(treeLabel + '\n' + tree);
+    }
+
+    // Souvenir hints (only if souvenir installed)
     if (isSouvenirAvailable()) {
-      const tree = buildProjectTree(cwd);
-      contextParts.push('📂 STRUCTURE DU PROJET (aperçu `souvenir_tree`) :\n' + tree);
       contextParts.push('🔍 Si l\'utilisateur fait référence à du travail passé → `souvenir_search` avant de demander des précisions.\nPour découvrir le projet en détail → `souvenir_tree` offre plus d\'options (filtres, compteurs de lignes, etc.).');
     }
 
-    // Git subdirectories: listing + status (independent of souvenir)
+    // Git subdirectories: listing + status
     const gitDirs = getGitSubdirectories(cwd);
     if (gitDirs.length > 0) {
       let gitSection = '📦 DÉPÔTS GIT DANS LE WORKSPACE :';
@@ -169,6 +178,13 @@ function main(): number {
       }
       gitSection += '\n\n⚠️ Si la synchronisation d\'un dépôt n\'est pas à jour, préviens l\'utilisateur dans ta prochaine réponse. Ne fais AUCUNE action git (commit, push, pull) sans demande explicite de l\'utilisateur.';
       contextParts.push(gitSection);
+    } else if (!projectEmpty) {
+      contextParts.push('📦 Aucun dépôt git détecté dans le workspace.');
+    }
+
+    // Empty project: single consolidated message
+    if (projectEmpty && gitDirs.length === 0) {
+      contextParts.push('📂 Le projet semble vide — aucun fichier ni dépôt git détecté. L\'utilisateur va probablement initialiser quelque chose.');
     }
 
     const fullMsg = contextParts.length > 0
