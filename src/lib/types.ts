@@ -6,6 +6,7 @@
 export interface HookInput {
   cwd: string;
   session_id: string;
+  transcript_path?: string;
   // SessionStart
   source?: string;
   // UserPromptSubmit

@@ -6,7 +6,8 @@
  * 2. Inject reflection questions when a new task begins
  *
  * Capture logic:
- * - If task_completed flag is true -> new task, reset and save as initial prompt
+ * - If task_completed flag is true AND Claude is NOT mid-task -> new task
+ * - Mid-task detection: read last transcript entries, check for tool_use in last assistant message
  * - Otherwise -> intervention on current task, append to list
  *
  * Reflection logic:
@@ -16,6 +17,58 @@
 import { loadHookInput, outputContext } from '../lib/io.js';
 import { loadState, saveState, cleanupOldStates } from '../lib/state.js';
 import { buildInterleaved, PRE_TASK_REFLECTION } from '../lib/messages.js';
+import { openSync, fstatSync, readSync, closeSync } from 'fs';
+
+/**
+ * Check if the last assistant message in the transcript contains tool_use blocks,
+ * indicating Claude is mid-task (between tool calls).
+ *
+ * Reads only the last 64KB of the JSONL file for performance.
+ * Returns false (safe default) if transcript is unavailable or unreadable.
+ */
+function isAssistantMidTask(transcriptPath: string | undefined): boolean {
+  if (!transcriptPath) return false;
+
+  try {
+    const fd = openSync(transcriptPath, 'r');
+    try {
+      const stats = fstatSync(fd);
+      if (stats.size === 0) return false;
+
+      // Read last 64KB — enough for several transcript entries
+      const chunkSize = Math.min(65536, stats.size);
+      const buffer = Buffer.alloc(chunkSize);
+      readSync(fd, buffer, 0, chunkSize, Math.max(0, stats.size - chunkSize));
+
+      const content = buffer.toString('utf-8');
+      const lines = content.split('\n');
+
+      // Scan from the end to find the most recent assistant entry
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        try {
+          const entry = JSON.parse(line);
+          if (entry.type === 'assistant' && Array.isArray(entry.message?.content)) {
+            return entry.message.content.some(
+              (block: { type: string }) => block.type === 'tool_use',
+            );
+          }
+        } catch {
+          // Truncated first line in chunk or invalid JSON — skip
+          continue;
+        }
+      }
+    } finally {
+      closeSync(fd);
+    }
+  } catch {
+    // Can't read transcript — safe default: not mid-task
+  }
+
+  return false;
+}
 
 function main(): number {
   const input = loadHookInput();
@@ -29,7 +82,8 @@ function main(): number {
   // --- Single state load ---
   const state = loadState(cwd, session_id);
 
-  const isNewTask = state.task_completed;
+  // New task = Stop fired (task_completed) AND Claude is NOT mid-tool-chain
+  const isNewTask = state.task_completed && !isAssistantMidTask(input.transcript_path);
 
   if (isNewTask) {
     // New task — reset context fields, save as initial prompt

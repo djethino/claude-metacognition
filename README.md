@@ -78,7 +78,14 @@ node deploy.mjs
 
 ### Task Detection Logic
 
-The Stop hook fires after each complete response, setting `task_completed = true`. The next UserPromptSubmit sees this flag and treats the prompt as a new task (reset + capture). Prompts sent *during* Claude's work (system-reminders) are not captured as interventions — only explicit user messages between responses.
+The Stop hook fires after each complete response, setting `task_completed = true`. The next UserPromptSubmit checks two things before treating a prompt as a new task:
+
+1. **Flag check**: `task_completed` must be `true` (Stop fired since last prompt)
+2. **Transcript check**: The last assistant message in the JSONL transcript must NOT contain `tool_use` blocks
+
+If the last assistant message has `tool_use` blocks, Claude is mid-task (between tool calls) — the prompt is treated as an intervention, not a new task. This prevents the false positive where Stop fires between tool calls and a user message resets the session state.
+
+The transcript analysis reads only the last 64KB of the file for performance. If the transcript is unavailable, behavior falls back to the flag-only check.
 
 ### Post-Compaction Injection
 
@@ -93,15 +100,19 @@ After context compaction, the SessionStart hook injects:
 ### New Session Context
 
 On startup or `/clear`, the SessionStart hook injects:
-- **Project tree** (if claude-souvenir is installed): filesystem structure at depth 2, with extension breakdown and last modified date for collapsed directories
-- **Git repository status** (always, if subdirectories contain `.git`): branch, last activity, uncommitted files, unpushed/unpulled commits
+- **Project tree**: filesystem structure at depth 2, with extension breakdown and last modified date for collapsed directories. When claude-souvenir is installed, the tree is presented as a `souvenir_tree` preview — Claude can use `souvenir_tree` for deeper exploration (filters, line counts, etc.)
+- **Git repository status** (if subdirectories contain `.git`): branch, last activity, uncommitted files, unpushed/unpulled commits
 - Instruction to warn the user about git desync without taking action
 
 This context only appears on fresh sessions — not on resume (`-c`/`-r`) or compaction.
 
 ### Claude-Souvenir Integration
 
-If [claude-souvenir](https://github.com/djethino/claude-souvenir) is installed, the session start message includes the project tree and souvenir hints. The post-compaction message includes souvenir tool references so Claude can recover deep context from past sessions.
+If [claude-souvenir](https://github.com/djethino/claude-souvenir) is installed:
+- **New session**: the project tree is presented as a `souvenir_tree` preview, with hints to use `souvenir_search` for past context and `souvenir_tree` for deeper exploration
+- **After compaction**: the context message includes `souvenir_search` references so Claude can recover discussions and decisions lost in the summary
+
+Without souvenir, the project tree still appears (without the souvenir framing), and compaction context is still restored — only the souvenir-specific hints are omitted.
 
 ## Architecture
 
@@ -161,10 +172,10 @@ Metacognition is part of a plugin suite designed around a simple idea: Claude is
 
 Metacognition detects whether souvenir is installed (by reading `~/.claude/settings.json`). When it is:
 
-- **New session**: metacognition injects a project tree and suggests `souvenir_search` for past context, `souvenir_tree` for deeper exploration
+- **New session**: the project tree is framed as a `souvenir_tree` preview with hints to use `souvenir_search` and `souvenir_tree` for deeper context
 - **After compaction**: metacognition reminds Claude that `souvenir_search` can recover discussions and decisions lost in the summary
 
-Without souvenir, metacognition works identically — it just skips the tree and the souvenir-specific hints. Without metacognition, souvenir is available but Claude rarely thinks to use it after compaction, which is precisely when it's most needed.
+Without souvenir, metacognition still provides a project tree and git status at startup, but without the souvenir-specific hints. Without metacognition, souvenir is available but Claude rarely thinks to use it after compaction, which is precisely when it's most needed.
 
 In short: metacognition is the reflex, souvenir is the memory. One without the other works, but together they cover the gap between "I should look this up" and "here's where to look."
 
