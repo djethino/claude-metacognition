@@ -46,14 +46,14 @@ Claude Metacognition injects behavioral guidance into Claude Code via hooks:
 
 ```bash
 /plugin marketplace add djethino/asymptomatik-claude-plugins
-/plugin install claude-metacognition
+/plugin install asymptomatik-metacognition@asymptomatik
 ```
 
 ### From Plugin Repository
 
 ```bash
 /plugin marketplace add djethino/claude-metacognition
-/plugin install claude-metacognition
+/plugin install asymptomatik-metacognition@asymptomatik-metacognition
 ```
 
 ### Local Development
@@ -102,7 +102,7 @@ After context compaction, the SessionStart hook injects:
 ### New Session Context
 
 On startup or `/clear`, the SessionStart hook injects:
-- **Project tree**: filesystem structure at depth 2, with extension breakdown and last modified date for collapsed directories. When claude-souvenir is installed, the tree is presented as a `souvenir_tree` preview — Claude can use `souvenir_tree` for deeper exploration (filters, line counts, etc.)
+- **Project tree**: filesystem structure at depth 2, with extension breakdown and last modified date for collapsed directories. When asymptomatik-souvenir is installed, the tree is presented as a `souvenir_tree` preview — Claude can use `souvenir_tree` for deeper exploration (filters, line counts, etc.)
 - **Git repository status** (if subdirectories contain `.git`): branch, last activity, uncommitted files, unpushed/unpulled commits
 - Instruction to warn the user about git desync without taking action
 
@@ -110,7 +110,7 @@ This context only appears on fresh sessions — not on resume (`-c`/`-r`) or com
 
 ### Claude-Souvenir Integration
 
-If [claude-souvenir](https://github.com/djethino/claude-souvenir) is installed:
+If [asymptomatik-souvenir](https://github.com/djethino/claude-souvenir) is installed:
 - **New session**: the project tree is presented as a `souvenir_tree` preview, with hints to use `souvenir_search` for past context and `souvenir_tree` for deeper exploration
 - **After compaction**: the context message includes `souvenir_search` references so Claude can recover discussions and decisions lost in the summary
 
@@ -132,7 +132,7 @@ src/
     ├── paths.ts            # Path normalization, mtime utilities, git repo detection
     ├── tree.ts             # Project tree builder (extensions + mtime per dir)
     ├── messages.ts         # Message constants + interleaving
-    └── souvenir.ts         # claude-souvenir plugin detection
+    └── souvenir.ts         # asymptomatik-souvenir plugin detection
 ```
 
 ### Data Storage (per project)
@@ -166,8 +166,8 @@ Metacognition is part of a plugin suite designed around a simple idea: Claude is
 
 | Layer | Plugin | Role |
 |-------|--------|------|
-| **Behavior** | **claude-metacognition** (this plugin) | Decides *when* to think, *when* to search, *when* to stop and ask. Injects reflection at the right moments. |
-| **Memory** | **[claude-souvenir](https://github.com/djethino/claude-souvenir)** | Provides *what* to remember. Semantic search across past conversations and project files. |
+| **Behavior** | **asymptomatik-metacognition** (this plugin) | Decides *when* to think, *when* to search, *when* to stop and ask. Injects reflection at the right moments. |
+| **Memory** | **[asymptomatik-souvenir](https://github.com/djethino/claude-souvenir)** | Provides *what* to remember. Semantic search across past conversations and project files. |
 | **Safety** | **[claude-code-safety-net](https://github.com/kenryu42/claude-code-safety-net)** | Blocks *what not to do*. Prevents destructive commands (`rm -rf`, `git push --force`). |
 
 ### How metacognition and souvenir interact
