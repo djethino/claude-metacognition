@@ -1,0 +1,2 @@
+# Shipped build output: LF everywhere, as tsc writes it, so a rebuild never shows as a change
+build/** text eol=lf
