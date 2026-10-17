@@ -1,6 +1,6 @@
 {
   "name": "claude-metacognition",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Metacognitive reflection hooks for Claude Code: pre-task questions, post-task verification, post-compaction context awareness",
   "scripts": {
     "build": "node -e \"require('fs').rmSync('build', { recursive: true, force: true })\" && tsc"

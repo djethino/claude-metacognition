@@ -63,9 +63,11 @@ git clone https://github.com/djethino/claude-metacognition.git
 cd claude-metacognition
 npm install
 npm run build
-node deploy.mjs
-# Restart Claude Code
 ```
+
+Then add the clone as a local marketplace (`/plugin marketplace add <path>`) and install the plugin from it. After each change: `npm run build`, bump `version` in `.claude-plugin/plugin.json`, then `/plugin update` and restart Claude Code (hooks are loaded at session start).
+
+`build/` is **committed**: Claude Code installs plugins from git and never runs a build step. Run `npm run build` before every commit that touches `src/`.
 
 ## How It Works
 
