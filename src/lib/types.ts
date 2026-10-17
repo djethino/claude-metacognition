@@ -16,12 +16,8 @@ export interface HookInput {
   tool_input?: Record<string, unknown>;
 }
 
-/** Unified session state (.claude/metacognition/{session_id}.json) */
+/** Unified session state (.claude/ASymptOmatik/metacognition/{session_id}.json) */
 export interface SessionState {
-  // Metacognition
-  task_started: boolean;
-  compaction_count: number;
-  // Task context
   initial_prompt: string | null;
   initial_timestamp: string | null;
   interventions: Intervention[];

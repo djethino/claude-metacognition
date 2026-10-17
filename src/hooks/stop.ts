@@ -9,21 +9,13 @@
  * PRE_TASK_REFLECTION in prompt-submit.ts ("AVANT DE CONCLURE" section).
  */
 
-import { loadHookInput } from '../lib/io.js';
-import { loadState, saveState } from '../lib/state.js';
+import { runHook } from '../lib/io.js';
+import { updateState } from '../lib/state.js';
 
-function main(): number {
-  const input = loadHookInput();
-  if (!input) return 0;
+runHook('Stop', ({ cwd, session_id }) => {
+  if (!cwd || !session_id) return;
 
-  const { cwd, session_id } = input;
-  if (!cwd || !session_id) return 0;
-
-  const state = loadState(cwd, session_id);
-  state.task_completed = true;
-  saveState(cwd, session_id, state);
-
-  return 0;
-}
-
-process.exit(main());
+  updateState(cwd, session_id, (state) => {
+    state.task_completed = true;
+  });
+});

@@ -13,23 +13,18 @@
  * independent of filesystem mtime (important for multi-agent scenarios).
  */
 
-import { loadHookInput } from '../lib/io.js';
-import { loadState, saveState } from '../lib/state.js';
+import { runHook } from '../lib/io.js';
+import { updateState } from '../lib/state.js';
 import { normalizePath } from '../lib/paths.js';
 
-function main(): number {
-  const input = loadHookInput();
-  if (!input) return 0;
+const TRACKED_TOOLS = new Set(['Read', 'Edit', 'Write', 'MultiEdit']);
 
-  const { cwd, session_id, tool_name, tool_input } = input;
-  if (!cwd || !session_id) return 0;
-
-  // Only track file-related tools
-  const trackedTools = new Set(['Read', 'Edit', 'Write', 'MultiEdit']);
-  if (!tool_name || !trackedTools.has(tool_name)) return 0;
+runHook('PostToolUse', ({ cwd, session_id, tool_name, tool_input }) => {
+  if (!cwd || !session_id) return;
+  if (!tool_name || !TRACKED_TOOLS.has(tool_name)) return;
 
   const filePath = (tool_input?.file_path as string) ?? '';
-  if (!filePath) return 0;
+  if (!filePath) return;
 
   const normalizedPath = normalizePath(filePath, cwd);
 
@@ -44,36 +39,24 @@ function main(): number {
     accessType = 'update';
   }
 
-  // Update state with file access
-  const state = loadState(cwd, session_id);
-
-  if (!state.file_access) {
-    state.file_access = {};
-  }
-
-  // Normalize existing paths (handle backslash inconsistencies)
-  const normalizedAccess: Record<string, string[]> = {};
-  for (const [path, accesses] of Object.entries(state.file_access)) {
-    const normPath = path.replace(/\\/g, '/');
-    if (normPath in normalizedAccess) {
-      const merged = new Set([...normalizedAccess[normPath], ...accesses]);
-      normalizedAccess[normPath] = [...merged];
-    } else {
-      normalizedAccess[normPath] = accesses;
+  updateState(cwd, session_id, (state) => {
+    // Normalize existing paths (handle backslash inconsistencies)
+    const normalizedAccess: Record<string, string[]> = {};
+    for (const [path, accesses] of Object.entries(state.file_access ?? {})) {
+      const normPath = path.replace(/\\/g, '/');
+      if (normPath in normalizedAccess) {
+        const merged = new Set([...normalizedAccess[normPath], ...accesses]);
+        normalizedAccess[normPath] = [...merged];
+      } else {
+        normalizedAccess[normPath] = accesses;
+      }
     }
-  }
-  state.file_access = normalizedAccess;
 
-  // Add this access
-  if (!state.file_access[normalizedPath]) {
-    state.file_access[normalizedPath] = [];
-  }
-  if (!state.file_access[normalizedPath].includes(accessType)) {
-    state.file_access[normalizedPath].push(accessType);
-  }
-
-  saveState(cwd, session_id, state);
-  return 0;
-}
-
-process.exit(main());
+    // Add this access
+    const accesses = (normalizedAccess[normalizedPath] ??= []);
+    if (!accesses.includes(accessType)) {
+      accesses.push(accessType);
+    }
+    state.file_access = normalizedAccess;
+  });
+});

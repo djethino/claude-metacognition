@@ -106,22 +106,14 @@ function buildCompactionMessage(cwd, state) {
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
-function main() {
-    const input = (0, io_js_1.loadHookInput)();
-    if (!input)
-        return 0;
+(0, io_js_1.runHook)('SessionStart', (input) => {
     const { cwd, session_id } = input;
     const source = input.source ?? '';
     if (!cwd || !session_id)
-        return 0;
-    const state = (0, state_js_1.loadState)(cwd, session_id);
+        return;
     if (source === 'compact') {
-        // --- Compaction detected ---
-        state.compaction_count = (state.compaction_count ?? 0) + 1;
-        (0, state_js_1.saveState)(cwd, session_id, state);
-        // Build and inject full context message
-        const message = buildCompactionMessage(cwd, state);
-        (0, io_js_1.outputContext)('SessionStart', message);
+        // --- Compaction detected: inject the captured task context ---
+        (0, io_js_1.outputContext)('SessionStart', buildCompactionMessage(cwd, (0, state_js_1.loadState)(cwd, session_id)));
     }
     else if (source === 'resume') {
         // --- Session resumed (claude -c / claude -r) ---
@@ -132,10 +124,8 @@ function main() {
     else {
         // --- New session (startup) or clear ---
         (0, state_js_1.resetState)(cwd, session_id);
-        // Repeated metacognitive message (appears REPETITION_COUNT times)
-        const repeatedMsg = (0, messages_js_1.repeatMessage)(messages_js_1.NEW_SESSION_MESSAGE);
-        // Factual context (appears once — no need to repeat data)
-        const contextParts = [];
+        // Metacognitive message, then factual context
+        const contextParts = [messages_js_1.NEW_SESSION_MESSAGE];
         // Project tree (always — gives Claude orientation regardless of souvenir)
         const tree = (0, tree_js_1.buildProjectTree)(cwd);
         const projectEmpty = tree === '(vide)';
@@ -166,14 +156,9 @@ function main() {
         if (projectEmpty && gitDirs.length === 0) {
             contextParts.push('📂 Le projet semble vide — aucun fichier ni dépôt git détecté. L\'utilisateur va probablement initialiser quelque chose.');
         }
-        const fullMsg = contextParts.length > 0
-            ? repeatedMsg + '\n\n' + contextParts.join('\n\n')
-            : repeatedMsg;
-        (0, io_js_1.outputContext)('SessionStart', fullMsg);
+        (0, io_js_1.outputContext)('SessionStart', contextParts.join('\n\n'));
     }
-    return 0;
-}
-process.exit(main());
+});
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

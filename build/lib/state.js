@@ -2,21 +2,30 @@
 /**
  * Unified session state CRUD (.claude/ASymptOmatik/metacognition/{session_id}.json).
  *
- * Single file per session containing both metacognition state (task_started,
- * compaction_count) and task context (initial_prompt, interventions, file_access).
+ * Single file per session containing the task context (initial_prompt, interventions,
+ * task_completed, file_access).
+ *
+ * Several hook processes write the same file concurrently (parallel tool calls, subagents
+ * sharing the session id, a prompt sent while tools run): every read-modify-write goes
+ * through updateState(), which holds an exclusive lock file so no update is lost.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.loadState = loadState;
-exports.saveState = saveState;
+exports.updateState = updateState;
 exports.resetState = resetState;
 exports.cleanupOldStates = cleanupOldStates;
 const fs_1 = require("fs");
 const path_1 = require("path");
 const crypto_1 = require("crypto");
 const MAX_STATE_FILES = 10;
+// A hook holds the lock for a few milliseconds; waiting longer means something is wrong
+const LOCK_TIMEOUT_MS = 3000;
+// A lock older than this was left by a killed process
+const STALE_LOCK_MS = 10000;
+// Windows: antivirus/indexers briefly hold freshly written files, making rename fail
+const RENAME_RETRIES = 5;
+const RETRY_DELAY_MS = 20;
 const DEFAULT_STATE = {
-    task_started: false,
-    compaction_count: 0,
     initial_prompt: null,
     initial_timestamp: null,
     interventions: [],
@@ -28,63 +37,151 @@ function getStateDir(cwd) {
 function getStateFile(cwd, sessionId) {
     return (0, path_1.join)(getStateDir(cwd), `${sessionId}.json`);
 }
+function sleep(ms) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+function errorCode(err) {
+    return err.code;
+}
+function acquireLock(lockPath) {
+    const deadline = Date.now() + LOCK_TIMEOUT_MS;
+    for (;;) {
+        try {
+            (0, fs_1.closeSync)((0, fs_1.openSync)(lockPath, 'wx'));
+            return;
+        }
+        catch (err) {
+            if (errorCode(err) !== 'EEXIST')
+                throw err;
+        }
+        try {
+            if (Date.now() - (0, fs_1.statSync)(lockPath).mtimeMs > STALE_LOCK_MS) {
+                (0, fs_1.unlinkSync)(lockPath);
+                continue;
+            }
+        }
+        catch (err) {
+            // Released between our open and stat: try again at once
+            if (errorCode(err) === 'ENOENT')
+                continue;
+            throw err;
+        }
+        if (Date.now() > deadline) {
+            throw new Error(`state file still locked after ${LOCK_TIMEOUT_MS} ms: ${lockPath}`);
+        }
+        sleep(RETRY_DELAY_MS);
+    }
+}
+function readState(file) {
+    let raw;
+    try {
+        raw = (0, fs_1.readFileSync)(file, 'utf-8');
+    }
+    catch (err) {
+        if (errorCode(err) === 'ENOENT')
+            return { ...DEFAULT_STATE };
+        throw err;
+    }
+    // Merge with defaults so files written by older versions stay readable
+    return { ...DEFAULT_STATE, ...JSON.parse(raw) };
+}
+/** Write atomically (temp file + rename); the temp file never outlives a failure. */
+function writeState(file, state) {
+    const tmp = `${file}.${(0, crypto_1.randomBytes)(4).toString('hex')}.tmp`;
+    (0, fs_1.writeFileSync)(tmp, JSON.stringify(state, null, 2), 'utf-8');
+    try {
+        for (let attempt = 1;; attempt++) {
+            try {
+                (0, fs_1.renameSync)(tmp, file);
+                return;
+            }
+            catch (err) {
+                const code = errorCode(err);
+                const transient = code === 'EPERM' || code === 'EACCES' || code === 'EBUSY';
+                if (!transient || attempt >= RENAME_RETRIES)
+                    throw err;
+                sleep(RETRY_DELAY_MS * attempt);
+            }
+        }
+    }
+    catch (err) {
+        (0, fs_1.unlinkSync)(tmp);
+        throw err;
+    }
+}
+function withLock(cwd, sessionId, fn) {
+    (0, fs_1.mkdirSync)(getStateDir(cwd), { recursive: true });
+    const file = getStateFile(cwd, sessionId);
+    const lock = `${file}.lock`;
+    acquireLock(lock);
+    try {
+        return fn(file);
+    }
+    finally {
+        (0, fs_1.unlinkSync)(lock);
+    }
+}
 /**
- * Load session state. Merges with defaults to handle old/partial files gracefully.
+ * Read the session state (defaults if none was saved yet).
  */
 function loadState(cwd, sessionId) {
-    try {
-        const raw = (0, fs_1.readFileSync)(getStateFile(cwd, sessionId), 'utf-8');
-        const parsed = JSON.parse(raw);
-        return { ...DEFAULT_STATE, ...parsed };
-    }
-    catch {
-        return { ...DEFAULT_STATE };
-    }
+    return withLock(cwd, sessionId, readState);
 }
 /**
- * Save session state atomically (temp file + rename).
+ * Read-modify-write the session state under an exclusive lock.
+ * `mutate` changes the state in place; the saved state is returned.
  */
-function saveState(cwd, sessionId, state) {
-    try {
-        const dir = getStateDir(cwd);
-        (0, fs_1.mkdirSync)(dir, { recursive: true });
-        const target = getStateFile(cwd, sessionId);
-        const tmp = target + '.' + (0, crypto_1.randomBytes)(4).toString('hex') + '.tmp';
-        (0, fs_1.writeFileSync)(tmp, JSON.stringify(state, null, 2), 'utf-8');
-        (0, fs_1.renameSync)(tmp, target);
-        return true;
-    }
-    catch {
-        return false;
-    }
+function updateState(cwd, sessionId, mutate) {
+    return withLock(cwd, sessionId, (file) => {
+        const state = readState(file);
+        mutate(state);
+        writeState(file, state);
+        return state;
+    });
 }
 /**
- * Reset session state to defaults (new session / new task).
+ * Reset session state to defaults (new session).
  */
 function resetState(cwd, sessionId) {
-    saveState(cwd, sessionId, { ...DEFAULT_STATE });
+    updateState(cwd, sessionId, (state) => {
+        Object.assign(state, DEFAULT_STATE, { interventions: [] });
+        delete state.file_access;
+    });
 }
 /**
- * Keep only the MAX_STATE_FILES most recent state files.
+ * Keep only the MAX_STATE_FILES most recent state files, and remove temp/lock files
+ * left behind by killed processes.
  */
 function cleanupOldStates(cwd) {
     const dir = getStateDir(cwd);
-    try {
-        const entries = (0, fs_1.readdirSync)(dir)
-            .filter((f) => f.endsWith('.json'))
-            .map((f) => {
-            const fullPath = (0, path_1.join)(dir, f);
-            return { path: fullPath, mtime: (0, fs_1.statSync)(fullPath).mtimeMs };
+    const now = Date.now();
+    const stateFiles = [];
+    for (const name of (0, fs_1.readdirSync)(dir)) {
+        const fullPath = (0, path_1.join)(dir, name);
+        ignoreVanished(() => {
+            const mtime = (0, fs_1.statSync)(fullPath).mtimeMs;
+            if (name.endsWith('.json')) {
+                stateFiles.push({ path: fullPath, mtime });
+            }
+            else if ((name.endsWith('.tmp') || name.endsWith('.lock')) && now - mtime > STALE_LOCK_MS) {
+                (0, fs_1.unlinkSync)(fullPath);
+            }
         });
-        if (entries.length <= MAX_STATE_FILES)
-            return;
-        entries.sort((a, b) => a.mtime - b.mtime);
-        const toDelete = entries.slice(0, entries.length - MAX_STATE_FILES);
-        for (const entry of toDelete) {
-            (0, fs_1.unlinkSync)(entry.path);
-        }
     }
-    catch {
-        // Directory doesn't exist or other OS error — ignore
+    if (stateFiles.length <= MAX_STATE_FILES)
+        return;
+    stateFiles.sort((a, b) => a.mtime - b.mtime);
+    for (const entry of stateFiles.slice(0, stateFiles.length - MAX_STATE_FILES)) {
+        ignoreVanished(() => (0, fs_1.unlinkSync)(entry.path));
+    }
+}
+/** Another hook process may delete the same file first: that is not an error. */
+function ignoreVanished(fn) {
+    try {
+        fn();
+    }
+    catch (err) {
+        if (errorCode(err) !== 'ENOENT')
+            throw err;
     }
 }
