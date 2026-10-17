@@ -1,7 +1,8 @@
 /**
- * Plugin detection for claude-souvenir.
+ * Plugin detection for asymptomatik-souvenir.
  *
- * Checks ~/.claude/settings.json for enabledPlugins containing 'claude-souvenir'.
+ * Checks the user settings (settings.json in the Claude config directory) for an enabled
+ * asymptomatik-souvenir plugin, from any marketplace.
  * Result is cached for the lifetime of the process (one hook invocation).
  */
 
@@ -9,16 +10,20 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
+const SOUVENIR_PLUGIN = 'asymptomatik-souvenir';
+
 let _souvenirAvailable: boolean | null = null;
 
 /**
- * Check if claude-souvenir plugin is installed and enabled.
+ * Check if the asymptomatik-souvenir plugin is installed and enabled.
  */
 export function isSouvenirAvailable(): boolean {
   if (_souvenirAvailable !== null) return _souvenirAvailable;
 
   try {
-    const settingsPath = join(homedir(), '.claude', 'settings.json');
+    // CLAUDE_CONFIG_DIR is set when Claude Code runs with a relocated config directory
+    const configDir = process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude');
+    const settingsPath = join(configDir, 'settings.json');
     if (!existsSync(settingsPath)) {
       _souvenirAvailable = false;
       return false;
@@ -27,8 +32,9 @@ export function isSouvenirAvailable(): boolean {
     const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
     const enabled: Record<string, boolean> = settings.enabledPlugins ?? {};
 
+    // Plugin ids are "<plugin>@<marketplace>"
     _souvenirAvailable = Object.entries(enabled).some(
-      ([key, val]) => key.includes('claude-souvenir') && val === true,
+      ([id, val]) => id.split('@')[0] === SOUVENIR_PLUGIN && val === true,
     );
   } catch {
     _souvenirAvailable = false;

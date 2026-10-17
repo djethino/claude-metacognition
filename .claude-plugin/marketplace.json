@@ -1,11 +1,12 @@
 {
-  "name": "claude-metacognition",
+  "name": "asymptomatik-metacognition",
   "owner": {
     "name": "ASymptOmatik"
   },
+  "description": "Single-plugin marketplace for asymptomatik-metacognition (also listed in djethino/asymptomatik-claude-plugins)",
   "plugins": [
     {
-      "name": "claude-metacognition",
+      "name": "asymptomatik-metacognition",
       "source": ".",
       "description": "Hooks de réflexion métacognitive pour Claude Code"
     }
