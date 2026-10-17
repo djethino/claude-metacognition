@@ -169,7 +169,6 @@ Metacognition is part of a plugin suite designed around a simple idea: Claude is
 |-------|--------|------|
 | **Behavior** | **asymptomatik-metacognition** (this plugin) | Decides *when* to think, *when* to search, *when* to stop and ask. Injects reflection at the right moments. |
 | **Memory** | **[asymptomatik-souvenir](https://github.com/djethino/claude-souvenir)** | Provides *what* to remember. Semantic search across past conversations and project files. |
-| **Safety** | **[claude-code-safety-net](https://github.com/kenryu42/claude-code-safety-net)** | Blocks *what not to do*. Prevents destructive commands (`rm -rf`, `git push --force`). |
 
 ### How metacognition and souvenir interact
 
