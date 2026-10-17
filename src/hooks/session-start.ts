@@ -25,7 +25,7 @@ import type { SessionState, GitRepoInfo } from '../lib/types.js';
 // Build the compaction message
 // ---------------------------------------------------------------------------
 
-function buildCompactionMessage(cwd: string, state: SessionState): string {
+function buildCompactionMessage(projectDir: string, state: SessionState): string {
   const now = new Date();
   const nowStr = formatTime(now);
 
@@ -74,7 +74,7 @@ function buildCompactionMessage(cwd: string, state: SessionState): string {
         lines.push('\uD83D\uDCC1 FICHIERS ACC\u00C9D\u00C9S PENDANT CETTE T\u00C2CHE :');
         const accessOrder: Record<string, number> = { read: 0, update: 1, write: 2 };
         for (const [f, accesses] of fileAccessEntries) {
-          const mtime = getFileMtime(cwd, f);
+          const mtime = getFileMtime(projectDir, f);
           const sorted = [...accesses].sort((a, b) => (accessOrder[a] ?? 3) - (accessOrder[b] ?? 3));
           const accessStr = sorted.join('+');
           const timeStr = mtime ? ` (${mtime})` : '';
@@ -85,7 +85,7 @@ function buildCompactionMessage(cwd: string, state: SessionState): string {
 
       // Other files modified since task start (mtime-based)
       const trackedFiles = new Set(Object.keys(fileAccess));
-      const allRecentFiles = getRecentFilesWithMtime(cwd, initialTs);
+      const allRecentFiles = getRecentFilesWithMtime(projectDir, initialTs);
       const otherFiles = allRecentFiles.filter((f) => !trackedFiles.has(f.path));
 
       if (otherFiles.length > 0) {
@@ -119,15 +119,15 @@ function buildCompactionMessage(cwd: string, state: SessionState): string {
 // Main
 // ---------------------------------------------------------------------------
 
-runHook('SessionStart', (input) => {
-  const { cwd, session_id } = input;
+runHook('SessionStart', (input, projectDir) => {
+  const { session_id } = input;
   const source = input.source ?? '';
 
-  if (!cwd || !session_id) return;
+  if (!session_id) return;
 
   if (source === 'compact') {
     // --- Compaction detected: inject the captured task context ---
-    outputContext('SessionStart', buildCompactionMessage(cwd, loadState(cwd, session_id)));
+    outputContext('SessionStart', buildCompactionMessage(projectDir, loadState(projectDir, session_id)));
   } else if (source === 'resume') {
     // --- Session resumed (claude -c / claude -r) ---
     // Claude already has the conversation history loaded.
@@ -135,13 +135,13 @@ runHook('SessionStart', (input) => {
     // Don't inject "new session" message — it would be misleading.
   } else {
     // --- New session (startup) or clear ---
-    resetState(cwd, session_id);
+    resetState(projectDir, session_id);
 
     // Metacognitive message, then factual context
     const contextParts: string[] = [NEW_SESSION_MESSAGE];
 
     // Project tree (always — gives Claude orientation regardless of souvenir)
-    const tree = buildProjectTree(cwd);
+    const tree = buildProjectTree(projectDir);
     const projectEmpty = tree === '(vide)';
 
     if (!projectEmpty) {
@@ -157,7 +157,7 @@ runHook('SessionStart', (input) => {
     }
 
     // Git subdirectories: listing + status
-    const gitDirs = getGitSubdirectories(cwd);
+    const gitDirs = getGitSubdirectories(projectDir);
     if (gitDirs.length > 0) {
       let gitSection = '📦 DÉPÔTS GIT DANS LE WORKSPACE :';
       for (const repo of gitDirs) {

@@ -23,7 +23,7 @@ const tree_js_1 = require("../lib/tree.js");
 // ---------------------------------------------------------------------------
 // Build the compaction message
 // ---------------------------------------------------------------------------
-function buildCompactionMessage(cwd, state) {
+function buildCompactionMessage(projectDir, state) {
     const now = new Date();
     const nowStr = formatTime(now);
     const lines = [
@@ -67,7 +67,7 @@ function buildCompactionMessage(cwd, state) {
                 lines.push('\uD83D\uDCC1 FICHIERS ACC\u00C9D\u00C9S PENDANT CETTE T\u00C2CHE :');
                 const accessOrder = { read: 0, update: 1, write: 2 };
                 for (const [f, accesses] of fileAccessEntries) {
-                    const mtime = (0, paths_js_1.getFileMtime)(cwd, f);
+                    const mtime = (0, paths_js_1.getFileMtime)(projectDir, f);
                     const sorted = [...accesses].sort((a, b) => (accessOrder[a] ?? 3) - (accessOrder[b] ?? 3));
                     const accessStr = sorted.join('+');
                     const timeStr = mtime ? ` (${mtime})` : '';
@@ -77,7 +77,7 @@ function buildCompactionMessage(cwd, state) {
             }
             // Other files modified since task start (mtime-based)
             const trackedFiles = new Set(Object.keys(fileAccess));
-            const allRecentFiles = (0, paths_js_1.getRecentFilesWithMtime)(cwd, initialTs);
+            const allRecentFiles = (0, paths_js_1.getRecentFilesWithMtime)(projectDir, initialTs);
             const otherFiles = allRecentFiles.filter((f) => !trackedFiles.has(f.path));
             if (otherFiles.length > 0) {
                 lines.push('\uD83D\uDCC1 AUTRES FICHIERS MODIFI\u00C9S DEPUIS LE D\u00C9BUT DE LA T\u00C2CHE :');
@@ -106,14 +106,14 @@ function buildCompactionMessage(cwd, state) {
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
-(0, io_js_1.runHook)('SessionStart', (input) => {
-    const { cwd, session_id } = input;
+(0, io_js_1.runHook)('SessionStart', (input, projectDir) => {
+    const { session_id } = input;
     const source = input.source ?? '';
-    if (!cwd || !session_id)
+    if (!session_id)
         return;
     if (source === 'compact') {
         // --- Compaction detected: inject the captured task context ---
-        (0, io_js_1.outputContext)('SessionStart', buildCompactionMessage(cwd, (0, state_js_1.loadState)(cwd, session_id)));
+        (0, io_js_1.outputContext)('SessionStart', buildCompactionMessage(projectDir, (0, state_js_1.loadState)(projectDir, session_id)));
     }
     else if (source === 'resume') {
         // --- Session resumed (claude -c / claude -r) ---
@@ -123,11 +123,11 @@ function buildCompactionMessage(cwd, state) {
     }
     else {
         // --- New session (startup) or clear ---
-        (0, state_js_1.resetState)(cwd, session_id);
+        (0, state_js_1.resetState)(projectDir, session_id);
         // Metacognitive message, then factual context
         const contextParts = [messages_js_1.NEW_SESSION_MESSAGE];
         // Project tree (always — gives Claude orientation regardless of souvenir)
-        const tree = (0, tree_js_1.buildProjectTree)(cwd);
+        const tree = (0, tree_js_1.buildProjectTree)(projectDir);
         const projectEmpty = tree === '(vide)';
         if (!projectEmpty) {
             const treeLabel = (0, souvenir_js_1.isSouvenirAvailable)()
@@ -140,7 +140,7 @@ function buildCompactionMessage(cwd, state) {
             contextParts.push('🔍 Si l\'utilisateur fait référence à du travail passé → `souvenir_search` avant de demander des précisions.\nPour découvrir le projet en détail → `souvenir_tree` offre plus d\'options (filtres, compteurs de lignes, etc.).');
         }
         // Git subdirectories: listing + status
-        const gitDirs = (0, paths_js_1.getGitSubdirectories)(cwd);
+        const gitDirs = (0, paths_js_1.getGitSubdirectories)(projectDir);
         if (gitDirs.length > 0) {
             let gitSection = '📦 DÉPÔTS GIT DANS LE WORKSPACE :';
             for (const repo of gitDirs) {

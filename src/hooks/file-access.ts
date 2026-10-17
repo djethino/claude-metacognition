@@ -19,14 +19,14 @@ import { normalizePath } from '../lib/paths.js';
 
 const TRACKED_TOOLS = new Set(['Read', 'Edit', 'Write', 'MultiEdit']);
 
-runHook('PostToolUse', ({ cwd, session_id, tool_name, tool_input }) => {
-  if (!cwd || !session_id) return;
+runHook('PostToolUse', ({ session_id, tool_name, tool_input }, projectDir) => {
+  if (!session_id) return;
   if (!tool_name || !TRACKED_TOOLS.has(tool_name)) return;
 
   const filePath = (tool_input?.file_path as string) ?? '';
   if (!filePath) return;
 
-  const normalizedPath = normalizePath(filePath, cwd);
+  const normalizedPath = normalizePath(filePath, projectDir);
 
   // Determine access type
   let accessType: string;
@@ -39,7 +39,7 @@ runHook('PostToolUse', ({ cwd, session_id, tool_name, tool_input }) => {
     accessType = 'update';
   }
 
-  updateState(cwd, session_id, (state) => {
+  updateState(projectDir, session_id, (state) => {
     // Normalize existing paths (handle backslash inconsistencies)
     const normalizedAccess: Record<string, string[]> = {};
     for (const [path, accesses] of Object.entries(state.file_access ?? {})) {

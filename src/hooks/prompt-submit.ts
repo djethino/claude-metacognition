@@ -80,15 +80,15 @@ function isAssistantMidTask(transcriptPath: string | undefined): boolean {
   return false;
 }
 
-runHook('UserPromptSubmit', (input) => {
-  const { cwd, prompt, session_id } = input;
-  if (!cwd || !prompt || !session_id) return;
+runHook('UserPromptSubmit', (input, projectDir) => {
+  const { prompt, session_id } = input;
+  if (!prompt || !session_id) return;
   if (isNotification(prompt)) return;
 
   const timestamp = new Date().toISOString();
   let isNewTask = false;
 
-  updateState(cwd, session_id, (state) => {
+  updateState(projectDir, session_id, (state) => {
     // New task = Stop fired (task_completed) AND Claude is NOT mid-tool-chain
     isNewTask = state.task_completed && !isAssistantMidTask(input.transcript_path);
 
@@ -103,7 +103,7 @@ runHook('UserPromptSubmit', (input) => {
       state.interventions.push({ timestamp, prompt });
     }
   });
-  cleanupOldStates(cwd);
+  cleanupOldStates(projectDir);
 
   if (isNewTask) {
     outputContext('UserPromptSubmit', PRE_TASK_REFLECTION);

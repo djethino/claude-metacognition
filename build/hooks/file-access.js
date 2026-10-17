@@ -18,15 +18,15 @@ const io_js_1 = require("../lib/io.js");
 const state_js_1 = require("../lib/state.js");
 const paths_js_1 = require("../lib/paths.js");
 const TRACKED_TOOLS = new Set(['Read', 'Edit', 'Write', 'MultiEdit']);
-(0, io_js_1.runHook)('PostToolUse', ({ cwd, session_id, tool_name, tool_input }) => {
-    if (!cwd || !session_id)
+(0, io_js_1.runHook)('PostToolUse', ({ session_id, tool_name, tool_input }, projectDir) => {
+    if (!session_id)
         return;
     if (!tool_name || !TRACKED_TOOLS.has(tool_name))
         return;
     const filePath = tool_input?.file_path ?? '';
     if (!filePath)
         return;
-    const normalizedPath = (0, paths_js_1.normalizePath)(filePath, cwd);
+    const normalizedPath = (0, paths_js_1.normalizePath)(filePath, projectDir);
     // Determine access type
     let accessType;
     if (tool_name === 'Read') {
@@ -39,7 +39,7 @@ const TRACKED_TOOLS = new Set(['Read', 'Edit', 'Write', 'MultiEdit']);
         // Edit or MultiEdit
         accessType = 'update';
     }
-    (0, state_js_1.updateState)(cwd, session_id, (state) => {
+    (0, state_js_1.updateState)(projectDir, session_id, (state) => {
         // Normalize existing paths (handle backslash inconsistencies)
         const normalizedAccess = {};
         for (const [path, accesses] of Object.entries(state.file_access ?? {})) {

@@ -75,15 +75,15 @@ function isAssistantMidTask(transcriptPath) {
     }
     return false;
 }
-(0, io_js_1.runHook)('UserPromptSubmit', (input) => {
-    const { cwd, prompt, session_id } = input;
-    if (!cwd || !prompt || !session_id)
+(0, io_js_1.runHook)('UserPromptSubmit', (input, projectDir) => {
+    const { prompt, session_id } = input;
+    if (!prompt || !session_id)
         return;
     if (isNotification(prompt))
         return;
     const timestamp = new Date().toISOString();
     let isNewTask = false;
-    (0, state_js_1.updateState)(cwd, session_id, (state) => {
+    (0, state_js_1.updateState)(projectDir, session_id, (state) => {
         // New task = Stop fired (task_completed) AND Claude is NOT mid-tool-chain
         isNewTask = state.task_completed && !isAssistantMidTask(input.transcript_path);
         if (isNewTask) {
@@ -98,7 +98,7 @@ function isAssistantMidTask(transcriptPath) {
             state.interventions.push({ timestamp, prompt });
         }
     });
-    (0, state_js_1.cleanupOldStates)(cwd);
+    (0, state_js_1.cleanupOldStates)(projectDir);
     if (isNewTask) {
         (0, io_js_1.outputContext)('UserPromptSubmit', messages_js_1.PRE_TASK_REFLECTION);
     }

@@ -12,10 +12,10 @@
 import { runHook } from '../lib/io.js';
 import { updateState } from '../lib/state.js';
 
-runHook('Stop', ({ cwd, session_id }) => {
-  if (!cwd || !session_id) return;
+runHook('Stop', ({ session_id }, projectDir) => {
+  if (!session_id) return;
 
-  updateState(cwd, session_id, (state) => {
+  updateState(projectDir, session_id, (state) => {
     state.task_completed = true;
   });
 });
