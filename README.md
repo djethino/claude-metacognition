@@ -152,7 +152,7 @@ Metacognition is designed for environments where multiple Claude instances (main
 - **Per-session isolation**: Each session gets its own state file (`{session_id}.json`). Separate sessions never read or write each other's state — no cross-contamination.
 - **Concurrent hooks**: Hooks of the same session often run at the same time (parallel tool calls, subagents, a prompt sent while tools run). Every read-modify-write holds an exclusive lock file, so no update is lost, and the state is written to a temp file then renamed, so it is never half-written. A write that fails is reported as a hook error instead of being silently dropped.
 - **Cross-agent awareness**: After compaction, the SessionStart hook detects files modified by *other* agents or external tools (via filesystem mtime comparison against tracked file access). This gives Claude visibility into work done outside its own session.
-- **Multi-project workspaces**: State is stored per-project (in the project's `.claude/` directory). A workspace containing multiple projects (each with its own `.git`) works naturally — git status and tree scan the workspace root, each project's state stays independent.
+- **Multi-project workspaces**: State is stored per-project (in the `.claude/` directory of `CLAUDE_PROJECT_DIR`, the root where the session started — not the hook input's `cwd`, which follows every `cd` Claude runs). A workspace containing multiple projects (each with its own `.git`) works naturally — git status and tree scan the workspace root, each project's state stays independent.
 
 ## Technical Details
 

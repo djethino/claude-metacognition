@@ -12,10 +12,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const io_js_1 = require("../lib/io.js");
 const state_js_1 = require("../lib/state.js");
-(0, io_js_1.runHook)('Stop', ({ cwd, session_id }) => {
-    if (!cwd || !session_id)
+(0, io_js_1.runHook)('Stop', ({ session_id }, projectDir) => {
+    if (!session_id)
         return;
-    (0, state_js_1.updateState)(cwd, session_id, (state) => {
+    (0, state_js_1.updateState)(projectDir, session_id, (state) => {
         state.task_completed = true;
     });
 });
