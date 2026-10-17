@@ -73,7 +73,7 @@ Then add the clone as a local marketplace (`/plugin marketplace add <path>`) and
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| **UserPromptSubmit** | User sends a prompt | Captures prompt + injects pre-task reflection questions |
+| **UserPromptSubmit** | User sends a prompt | Captures prompt; on a new task, injects pre-task reflection questions |
 | **Stop** | Response complete | Sets `task_completed` flag for new-task detection |
 | **PostToolUse** | After Read/Edit/Write/MultiEdit | Tracks file access with operation type |
 | **SessionStart** | New session or compaction | New session: project tree + git status + metacog reminders. Compaction: restores captured context. |
@@ -88,6 +88,8 @@ The Stop hook fires after each complete response, setting `task_completed = true
 If the last assistant message has `tool_use` blocks, Claude is mid-task (between tool calls) — the prompt is treated as an intervention, not a new task. This prevents the false positive where Stop fires between tool calls and a user message resets the session state.
 
 The transcript analysis reads only the last 64KB of the file for performance. If the transcript is unavailable, behavior falls back to the flag-only check.
+
+A new task gets the reflection questions; an intervention does not. Notifications that Claude Code delivers through the prompt queue (`<task-notification>` when a background task ends, `<agent-message>` subagent reports) are not user prompts: they are neither captured nor answered with reflection questions.
 
 ### Post-Compaction Injection
 
@@ -131,7 +133,7 @@ src/
     ├── state.ts            # SessionState CRUD (.claude/ASymptOmatik/metacognition/)
     ├── paths.ts            # Path normalization, mtime utilities, git repo detection
     ├── tree.ts             # Project tree builder (extensions + mtime per dir)
-    ├── messages.ts         # Message constants + interleaving
+    ├── messages.ts         # Message constants
     └── souvenir.ts         # asymptomatik-souvenir plugin detection
 ```
 
@@ -141,14 +143,14 @@ src/
 .claude/ASymptOmatik/metacognition/{session_id}.json
 ```
 
-Single unified `SessionState` per session: `{ task_started, compaction_count, initial_prompt, interventions, task_completed, file_access }`. Writes are atomic (temp file + rename). Automatically cleaned up (max 10 per project).
+Single unified `SessionState` per session: `{ initial_prompt, initial_timestamp, interventions, task_completed, file_access }`. Automatically cleaned up (max 10 per project, along with temp/lock files left by killed processes).
 
 ### Multi-Agent & Multi-Project
 
 Metacognition is designed for environments where multiple Claude instances (main agent, subagents, parallel sessions) may work on the same project simultaneously.
 
-- **Per-session isolation**: Each session gets its own state file (`{session_id}.json`). Agents never read or write each other's state — no cross-contamination.
-- **Atomic writes**: State is written to a temp file and renamed in a single OS operation. If two hooks fire at the same time (e.g., two agents completing simultaneously), neither corrupts the other's state file.
+- **Per-session isolation**: Each session gets its own state file (`{session_id}.json`). Separate sessions never read or write each other's state — no cross-contamination.
+- **Concurrent hooks**: Hooks of the same session often run at the same time (parallel tool calls, subagents, a prompt sent while tools run). Every read-modify-write holds an exclusive lock file, so no update is lost, and the state is written to a temp file then renamed, so it is never half-written. A write that fails is reported as a hook error instead of being silently dropped.
 - **Cross-agent awareness**: After compaction, the SessionStart hook detects files modified by *other* agents or external tools (via filesystem mtime comparison against tracked file access). This gives Claude visibility into work done outside its own session.
 - **Multi-project workspaces**: State is stored per-project (in the project's `.claude/` directory). A workspace containing multiple projects (each with its own `.git`) works naturally — git status and tree scan the workspace root, each project's state stays independent.
 
@@ -158,7 +160,6 @@ Metacognition is designed for environments where multiple Claude instances (main
 - **Runtime dependencies**: None (Node.js built-ins only, including `child_process` for git status)
 - **Node.js**: >= 18.0.0
 - **Hook variable**: `${CLAUDE_PLUGIN_ROOT}` for path resolution
-- **Message technique**: Google Research repetition (REPETITION_COUNT=2) for improved LLM adherence
 
 ## Ecosystem
 

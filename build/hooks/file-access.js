@@ -17,20 +17,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const io_js_1 = require("../lib/io.js");
 const state_js_1 = require("../lib/state.js");
 const paths_js_1 = require("../lib/paths.js");
-function main() {
-    const input = (0, io_js_1.loadHookInput)();
-    if (!input)
-        return 0;
-    const { cwd, session_id, tool_name, tool_input } = input;
+const TRACKED_TOOLS = new Set(['Read', 'Edit', 'Write', 'MultiEdit']);
+(0, io_js_1.runHook)('PostToolUse', ({ cwd, session_id, tool_name, tool_input }) => {
     if (!cwd || !session_id)
-        return 0;
-    // Only track file-related tools
-    const trackedTools = new Set(['Read', 'Edit', 'Write', 'MultiEdit']);
-    if (!tool_name || !trackedTools.has(tool_name))
-        return 0;
+        return;
+    if (!tool_name || !TRACKED_TOOLS.has(tool_name))
+        return;
     const filePath = tool_input?.file_path ?? '';
     if (!filePath)
-        return 0;
+        return;
     const normalizedPath = (0, paths_js_1.normalizePath)(filePath, cwd);
     // Determine access type
     let accessType;
@@ -44,32 +39,24 @@ function main() {
         // Edit or MultiEdit
         accessType = 'update';
     }
-    // Update state with file access
-    const state = (0, state_js_1.loadState)(cwd, session_id);
-    if (!state.file_access) {
-        state.file_access = {};
-    }
-    // Normalize existing paths (handle backslash inconsistencies)
-    const normalizedAccess = {};
-    for (const [path, accesses] of Object.entries(state.file_access)) {
-        const normPath = path.replace(/\\/g, '/');
-        if (normPath in normalizedAccess) {
-            const merged = new Set([...normalizedAccess[normPath], ...accesses]);
-            normalizedAccess[normPath] = [...merged];
+    (0, state_js_1.updateState)(cwd, session_id, (state) => {
+        // Normalize existing paths (handle backslash inconsistencies)
+        const normalizedAccess = {};
+        for (const [path, accesses] of Object.entries(state.file_access ?? {})) {
+            const normPath = path.replace(/\\/g, '/');
+            if (normPath in normalizedAccess) {
+                const merged = new Set([...normalizedAccess[normPath], ...accesses]);
+                normalizedAccess[normPath] = [...merged];
+            }
+            else {
+                normalizedAccess[normPath] = accesses;
+            }
         }
-        else {
-            normalizedAccess[normPath] = accesses;
+        // Add this access
+        const accesses = (normalizedAccess[normalizedPath] ??= []);
+        if (!accesses.includes(accessType)) {
+            accesses.push(accessType);
         }
-    }
-    state.file_access = normalizedAccess;
-    // Add this access
-    if (!state.file_access[normalizedPath]) {
-        state.file_access[normalizedPath] = [];
-    }
-    if (!state.file_access[normalizedPath].includes(accessType)) {
-        state.file_access[normalizedPath].push(accessType);
-    }
-    (0, state_js_1.saveState)(cwd, session_id, state);
-    return 0;
-}
-process.exit(main());
+        state.file_access = normalizedAccess;
+    });
+});

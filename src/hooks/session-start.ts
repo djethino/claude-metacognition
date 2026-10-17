@@ -13,10 +13,10 @@
  * - Treating pre-existing work as secondary
  */
 
-import { loadHookInput, outputContext } from '../lib/io.js';
-import { loadState, saveState, resetState } from '../lib/state.js';
+import { runHook, outputContext } from '../lib/io.js';
+import { loadState, resetState } from '../lib/state.js';
 import { getFileMtime, getRecentFilesWithMtime, getGitSubdirectories } from '../lib/paths.js';
-import { repeatMessage, POST_COMPACTION_METACOG, NEW_SESSION_MESSAGE } from '../lib/messages.js';
+import { POST_COMPACTION_METACOG, NEW_SESSION_MESSAGE } from '../lib/messages.js';
 import { isSouvenirAvailable } from '../lib/souvenir.js';
 import { buildProjectTree } from '../lib/tree.js';
 import type { SessionState, GitRepoInfo } from '../lib/types.js';
@@ -119,25 +119,15 @@ function buildCompactionMessage(cwd: string, state: SessionState): string {
 // Main
 // ---------------------------------------------------------------------------
 
-function main(): number {
-  const input = loadHookInput();
-  if (!input) return 0;
-
+runHook('SessionStart', (input) => {
   const { cwd, session_id } = input;
   const source = input.source ?? '';
 
-  if (!cwd || !session_id) return 0;
-
-  const state = loadState(cwd, session_id);
+  if (!cwd || !session_id) return;
 
   if (source === 'compact') {
-    // --- Compaction detected ---
-    state.compaction_count = (state.compaction_count ?? 0) + 1;
-    saveState(cwd, session_id, state);
-
-    // Build and inject full context message
-    const message = buildCompactionMessage(cwd, state);
-    outputContext('SessionStart', message);
+    // --- Compaction detected: inject the captured task context ---
+    outputContext('SessionStart', buildCompactionMessage(cwd, loadState(cwd, session_id)));
   } else if (source === 'resume') {
     // --- Session resumed (claude -c / claude -r) ---
     // Claude already has the conversation history loaded.
@@ -147,11 +137,8 @@ function main(): number {
     // --- New session (startup) or clear ---
     resetState(cwd, session_id);
 
-    // Repeated metacognitive message (appears REPETITION_COUNT times)
-    const repeatedMsg = repeatMessage(NEW_SESSION_MESSAGE);
-
-    // Factual context (appears once — no need to repeat data)
-    const contextParts: string[] = [];
+    // Metacognitive message, then factual context
+    const contextParts: string[] = [NEW_SESSION_MESSAGE];
 
     // Project tree (always — gives Claude orientation regardless of souvenir)
     const tree = buildProjectTree(cwd);
@@ -187,17 +174,9 @@ function main(): number {
       contextParts.push('📂 Le projet semble vide — aucun fichier ni dépôt git détecté. L\'utilisateur va probablement initialiser quelque chose.');
     }
 
-    const fullMsg = contextParts.length > 0
-      ? repeatedMsg + '\n\n' + contextParts.join('\n\n')
-      : repeatedMsg;
-
-    outputContext('SessionStart', fullMsg);
+    outputContext('SessionStart', contextParts.join('\n\n'));
   }
-
-  return 0;
-}
-
-process.exit(main());
+});
 
 // ---------------------------------------------------------------------------
 // Helpers

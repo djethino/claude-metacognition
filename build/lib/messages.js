@@ -1,45 +1,12 @@
 "use strict";
 /**
- * Message constants, repetition, and interleaving utilities.
+ * Message constants injected by the hooks.
  *
- * Uses the Google Research technique of repeating messages
- * for improved LLM adherence.
+ * Each message is injected once. Prompt repetition (Google Research, 2025) was measured
+ * to help non-reasoning models only; here it doubled the context cost of every injection.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PRE_TASK_REFLECTION = exports.NEW_SESSION_MESSAGE = exports.POST_COMPACTION_METACOG = void 0;
-exports.repeatMessage = repeatMessage;
-exports.buildInterleaved = buildInterleaved;
-// Number of times to repeat messages
-const REPETITION_COUNT = 2;
-/**
- * Repeat a message REPETITION_COUNT times, separated by ---.
- */
-function repeatMessage(message) {
-    const parts = Array.from({ length: REPETITION_COUNT }, () => message);
-    return parts.join('\n\n---\n\n');
-}
-/**
- * Build interleaved nudge + prompt pattern.
- *
- * With REPETITION_COUNT=2: nudge + prompt + nudge (prompt appears 1 time)
- * With REPETITION_COUNT=3: nudge + prompt + nudge + prompt + nudge (prompt appears 2 times)
- * With REPETITION_COUNT=1: nudge only (prompt appears 0 times)
- */
-function buildInterleaved(nudge, prompt) {
-    if (REPETITION_COUNT <= 1)
-        return nudge;
-    const parts = [];
-    for (let i = 0; i < REPETITION_COUNT; i++) {
-        parts.push(nudge);
-        if (i < REPETITION_COUNT - 1) {
-            parts.push(`PROMPT UTILISATEUR :\n${prompt}`);
-        }
-    }
-    return parts.join('\n\n---\n\n');
-}
-// ---------------------------------------------------------------------------
-// Message constants
-// ---------------------------------------------------------------------------
 exports.POST_COMPACTION_METACOG = `Pendant ton travail, tu DOIS régulièrement te demander :
 - Comprends-tu encore le POURQUOI de ce que tu fais ?
 - Es-tu en train de simplifier ou couper des coins ?
