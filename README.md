@@ -1,5 +1,7 @@
 # Claude Metacognition
 
+> **Archived (2026-10-18).** Claude Code's own progress (larger context, better compaction, memory) made this plugin unnecessary: the summary and the project's tracking files now carry the work across compactions, and reflection questions injected at every prompt wore off. It was removed from the `asymptomatik` marketplace; if you installed it, run `/plugin uninstall asymptomatik-metacognition@asymptomatik`. The hints it gave about [souvenir](https://github.com/djethino/claude-souvenir) now come from souvenir itself.
+
 Claude Code plugin that eliminates the repetitive startup and recovery steps Claude does at every session. Hooks-only, zero runtime dependencies.
 
 ## Why
